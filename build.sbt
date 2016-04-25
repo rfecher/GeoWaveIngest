@@ -30,4 +30,4 @@ lazy val raster = (project in file("raster")).
 
 lazy val vector = (project in file("vector")).
   dependsOn(root).
-  settings(commonSettings: _*).
+  settings(commonSettings: _*)
