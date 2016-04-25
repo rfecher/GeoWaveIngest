@@ -1,7 +1,7 @@
 package com.example.ingest
 
 
-object RasterIngest {
+object VectorIngest {
 
   def main(args: Array[String]) : Unit = {
   }
