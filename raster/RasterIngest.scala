@@ -4,15 +4,15 @@ import mil.nga.giat.geowave.adapter.raster.adapter.RasterDataAdapter
 import mil.nga.giat.geowave.core.geotime.ingest._
 import mil.nga.giat.geowave.core.store._
 import mil.nga.giat.geowave.core.store.index.PrimaryIndex
-import mil.nga.giat.geowave.core.store.memory.DataStoreUtils
 import mil.nga.giat.geowave.datastore.accumulo._
 import mil.nga.giat.geowave.datastore.accumulo.index.secondary.AccumuloSecondaryIndexDataStore
 import mil.nga.giat.geowave.datastore.accumulo.metadata._
 
-import org.apache.log4j.Logger;
+import org.apache.log4j.Logger
 import org.geotools.coverage.grid._
 import org.geotools.coverage.grid.io._
 import org.geotools.gce.geotiff._
+import org.opengis.coverage.grid.GridCoverage
 import org.opengis.parameter.GeneralParameterValue
 
 
@@ -55,7 +55,8 @@ object RasterIngest {
       new AccumuloAdapterStore(instance),
       new AccumuloDataStatisticsStore(instance),
       new AccumuloSecondaryIndexDataStore(instance),
-      instance)
+      new AccumuloAdapterIndexMappingStore(instance),
+      instance);
   }
 
   def main(args: Array[String]) : Unit = {
@@ -63,7 +64,7 @@ object RasterIngest {
       log.error("Invalid arguments, expected: zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace, rasterFile");
       System.exit(-1)
     }
-    val coverageName = ""
+    val coverageName = "anything, not empty" // This must not be empty
     val metadata = new java.util.HashMap[String, String]()
     val image = getGridCoverage2D(args(5))
 
@@ -73,9 +74,9 @@ object RasterIngest {
     // https://ngageoint.github.io/geowave/apidocs/mil/nga/giat/geowave/adapter/raster/adapter/RasterDataAdapter.html
     val adapter = new RasterDataAdapter(coverageName, metadata, image, 256, true)
 
-    val indexWriter = dataStore.createIndexWriter(index, DataStoreUtils.DEFAULT_VISIBILITY)
+    val indexWriter = dataStore.createWriter(adapter, index).asInstanceOf[IndexWriter[GridCoverage]]
 
-    indexWriter.write(adapter, image)
+    indexWriter.write(image)
     indexWriter.close
   }
 
