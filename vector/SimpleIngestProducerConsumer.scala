@@ -1,21 +1,20 @@
 package com.example.ingest.vector
 
-import mil.nga.giat.geowave.adapter.vector.FeatureDataAdapter;
-import mil.nga.giat.geowave.core.store.DataStore;
-import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
-import mil.nga.giat.geowave.core.store.IndexWriter;
-import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
-import mil.nga.giat.geowave.datastore.accumulo.BasicAccumuloOperations;
+import mil.nga.giat.geowave.adapter.vector.FeatureDataAdapter
+import mil.nga.giat.geowave.core.store.DataStore
+import mil.nga.giat.geowave.core.store.index.PrimaryIndex
+import mil.nga.giat.geowave.core.store.IndexWriter
+import mil.nga.giat.geowave.core.store.memory.DataStoreUtils
+import mil.nga.giat.geowave.datastore.accumulo.BasicAccumuloOperations
 
-import org.apache.log4j.Logger;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
+import org.apache.log4j.Logger
+import org.geotools.feature.simple.SimpleFeatureBuilder
+import org.opengis.feature.simple._
 
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.io.IOException
+import java.util.Iterator
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
 
 
 object SimpleIngestProducerConsumer {
@@ -69,10 +68,10 @@ class SimpleIngestProducerConsumer extends SimpleIngest {
       new Runnable() {
         override def run(): Unit = {
           try {
-            val writer = geowaveDataStore.createIndexWriter(index, DataStoreUtils.DEFAULT_VISIBILITY)
+            val writer = geowaveDataStore.createWriter(adapter, index).asInstanceOf[IndexWriter[SimpleFeature]]
             while (features.hasNext()) {
               val sft = features.next()
-              writer.write(adapter, sft)
+              writer.write(sft)
             }
           }
           catch {

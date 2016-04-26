@@ -7,22 +7,15 @@ import mil.nga.giat.geowave.core.geotime.GeometryUtils
 import mil.nga.giat.geowave.core.geotime.ingest.SpatialDimensionalityTypeProvider
 import mil.nga.giat.geowave.core.store.DataStore
 import mil.nga.giat.geowave.core.store.index.PrimaryIndex
-import mil.nga.giat.geowave.datastore.accumulo.AccumuloDataStore
-import mil.nga.giat.geowave.datastore.accumulo.AccumuloOptions
-import mil.nga.giat.geowave.datastore.accumulo.BasicAccumuloOperations
+import mil.nga.giat.geowave.datastore.accumulo._
 import mil.nga.giat.geowave.datastore.accumulo.index.secondary.AccumuloSecondaryIndexDataStore
-import mil.nga.giat.geowave.datastore.accumulo.metadata.AccumuloAdapterStore
-import mil.nga.giat.geowave.datastore.accumulo.metadata.AccumuloDataStatisticsStore
-import mil.nga.giat.geowave.datastore.accumulo.metadata.AccumuloIndexStore
+import mil.nga.giat.geowave.datastore.accumulo.metadata._
 
-import org.apache.accumulo.core.client.AccumuloException
-import org.apache.accumulo.core.client.AccumuloSecurityException
+import org.apache.accumulo.core.client._
 import org.apache.log4j.Logger
 import org.geotools.feature.AttributeTypeBuilder
-import org.geotools.feature.simple.SimpleFeatureBuilder
-import org.geotools.feature.simple.SimpleFeatureTypeBuilder
-import org.opengis.feature.simple.SimpleFeature
-import org.opengis.feature.simple.SimpleFeatureType
+import org.geotools.feature.simple._
+import org.opengis.feature.simple._
 
 import com.vividsolutions.jts.geom.Coordinate
 import com.vividsolutions.jts.geom.Geometry
@@ -73,7 +66,8 @@ class SimpleIngest {
       new AccumuloAdapterStore(instance),
       new AccumuloDataStatisticsStore(instance),
       new AccumuloSecondaryIndexDataStore(instance),
-      instance)
+      new AccumuloAdapterIndexMappingStore(instance),
+      instance);
   }
 
   def getAccumuloOperationsInstance(
