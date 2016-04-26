@@ -2,17 +2,16 @@ package com.example.ingest.vector
 
 import java.io.IOException;
 
-import mil.nga.giat.geowave.adapter.vector.FeatureDataAdapter;
-import mil.nga.giat.geowave.core.store.DataStore;
-import mil.nga.giat.geowave.core.store.IndexWriter;
-import mil.nga.giat.geowave.core.store.index.PrimaryIndex;
-import mil.nga.giat.geowave.core.store.memory.DataStoreUtils;
-import mil.nga.giat.geowave.datastore.accumulo.BasicAccumuloOperations;
+import mil.nga.giat.geowave.adapter.vector.FeatureDataAdapter
+import mil.nga.giat.geowave.core.store.DataStore
+import mil.nga.giat.geowave.core.store.IndexWriter
+import mil.nga.giat.geowave.core.store.index.PrimaryIndex
+import mil.nga.giat.geowave.core.store.memory.DataStoreUtils
+import mil.nga.giat.geowave.datastore.accumulo.BasicAccumuloOperations
 
-import org.apache.log4j.Logger;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
+import org.apache.log4j.Logger
+import org.geotools.feature.simple.SimpleFeatureBuilder
+import org.opengis.feature.simple._
 
 
 object SimpleIngestIndexWriter {
@@ -71,13 +70,13 @@ class SimpleIngestIndexWriter extends SimpleIngest {
     // BatchWriter, make sure to close it (here we use a try with resources
     // block to close it automatically)
     try {
-      val indexWriter = geowaveDataStore.createIndexWriter(index, DataStoreUtils.DEFAULT_VISIBILITY)
+      val indexWriter = geowaveDataStore.createWriter(adapter, index).asInstanceOf[IndexWriter[SimpleFeature]]
 
       // build a grid of points across the globe at each whole
       // lattitude/longitude intersection
 
       for (sft <- getGriddedFeatures(pointBuilder,1000)) {
-        indexWriter.write(adapter, sft)
+        indexWriter.write(sft)
       }
     }
     catch {
