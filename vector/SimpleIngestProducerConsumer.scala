@@ -18,12 +18,16 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
+object SimpleIngestProducerConsumer {
+  def main(args: Array[String]): Unit = (new SimpleIngestProducerConsumer).mainFunction(args)
+}
+
 class SimpleIngestProducerConsumer extends SimpleIngest {
 
   override val log = Logger.getLogger(classOf[SimpleIngestProducerConsumer])
   val features = new FeatureCollection()
 
-  def main(args: Array[String]): Unit = {
+  def mainFunction(args: Array[String]): Unit = {
     if (args.length != 5) {
       log.error("Invalid arguments, expected: zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace")
       System.exit(1)

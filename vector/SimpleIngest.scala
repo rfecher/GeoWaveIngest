@@ -139,13 +139,13 @@ class SimpleIngest {
     )
     builder.add(
       ab
-        .binding(classOf[Double])
+        .binding(classOf[java.lang.Double])
         .nillable(false)
         .buildDescriptor("Latitude")
     )
     builder.add(
       ab
-        .binding(classOf[Double])
+        .binding(classOf[java.lang.Double])
         .nillable(false)
         .buildDescriptor("Longitude")
     )

@@ -15,11 +15,15 @@ import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
 
+object SimpleIngestIndexWriter {
+  def main(args: Array[String]): Unit = (new SimpleIngestIndexWriter).mainFunction(args)
+}
+
 class SimpleIngestIndexWriter extends SimpleIngest {
 
   override val log = Logger.getLogger(classOf[SimpleIngestIndexWriter])
 
-  def main(args: Array[String]) : Unit = {
+  def mainFunction(args: Array[String]) : Unit = {
     if (args.length != 5) {
       log.error("Invalid arguments, expected: zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace");
       System.exit(1);
