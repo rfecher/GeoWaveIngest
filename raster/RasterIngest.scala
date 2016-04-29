@@ -21,7 +21,7 @@ object RasterIngest {
   val log = Logger.getLogger(RasterIngest.getClass)
 
   val policy = AbstractGridFormat.OVERVIEW_POLICY.createValue; policy.setValue(OverviewPolicy.IGNORE)
-  val gridSize = AbstractGridFormat.SUGGESTED_TILE_SIZE.createValue; gridSize.setValue("1024,1024")
+  val gridSize = AbstractGridFormat.SUGGESTED_TILE_SIZE.createValue; gridSize.setValue("256,256")
   val useJaiRead = AbstractGridFormat.USE_JAI_IMAGEREAD.createValue; useJaiRead.setValue(true)
 
   def getAccumuloOperationsInstance(
