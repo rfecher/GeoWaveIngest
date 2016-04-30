@@ -21,7 +21,7 @@ object RasterIngest {
   val log = Logger.getLogger(RasterIngest.getClass)
 
   val policy = AbstractGridFormat.OVERVIEW_POLICY.createValue; policy.setValue(OverviewPolicy.IGNORE)
-  val gridSize = AbstractGridFormat.SUGGESTED_TILE_SIZE.createValue; gridSize.setValue("1024,1024")
+  val gridSize = AbstractGridFormat.SUGGESTED_TILE_SIZE.createValue; gridSize.setValue("256,256")
   val useJaiRead = AbstractGridFormat.USE_JAI_IMAGEREAD.createValue; useJaiRead.setValue(true)
 
   def getAccumuloOperationsInstance(
@@ -64,7 +64,7 @@ object RasterIngest {
       log.error("Invalid arguments, expected: zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace, rasterFile");
       System.exit(-1)
     }
-    val coverageName = "anything, not empty" // This must not be empty
+    val coverageName = "coverageName" // This must not be empty
     val metadata = new java.util.HashMap[String, String]()
     val image = getGridCoverage2D(args(5))
 
@@ -72,7 +72,7 @@ object RasterIngest {
     val dataStore = getGeowaveDataStore(basicOperations)
     val index = createSpatialIndex
     // https://ngageoint.github.io/geowave/apidocs/mil/nga/giat/geowave/adapter/raster/adapter/RasterDataAdapter.html
-    val adapter = new RasterDataAdapter(coverageName, metadata, image, 256, true)
+    val adapter = new RasterDataAdapter(coverageName, metadata, image, 256, false)
 
     val indexWriter = dataStore.createWriter(adapter, index).asInstanceOf[IndexWriter[GridCoverage]]
 
