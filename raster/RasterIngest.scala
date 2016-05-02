@@ -20,10 +20,6 @@ object RasterIngest {
 
   val log = Logger.getLogger(RasterIngest.getClass)
 
-  val policy = AbstractGridFormat.OVERVIEW_POLICY.createValue; policy.setValue(OverviewPolicy.IGNORE)
-  val gridSize = AbstractGridFormat.SUGGESTED_TILE_SIZE.createValue; gridSize.setValue("512,512")
-  val useJaiRead = AbstractGridFormat.USE_JAI_IMAGEREAD.createValue; useJaiRead.setValue(true)
-
   def getAccumuloOperationsInstance(
     zookeepers: String,
     accumuloInstance: String,
@@ -44,7 +40,7 @@ object RasterIngest {
 
   def getGridCoverage2D(filename: String): GridCoverage2D = {
     val file = new java.io.File(filename)
-    val params = Array[GeneralParameterValue](policy, gridSize, useJaiRead)
+    val params = Array[GeneralParameterValue]()
 
     new GeoTiffReader(file).read(params)
   }
@@ -72,7 +68,7 @@ object RasterIngest {
     val dataStore = getGeowaveDataStore(basicOperations)
     val index = createSpatialIndex
     // https://ngageoint.github.io/geowave/apidocs/mil/nga/giat/geowave/adapter/raster/adapter/RasterDataAdapter.html
-    val adapter = new RasterDataAdapter(coverageName, metadata, image, 256, true)
+    val adapter = new RasterDataAdapter(coverageName, metadata, image, 16, false)
 
     val indexWriter = dataStore.createWriter(adapter, index).asInstanceOf[IndexWriter[GridCoverage]]
 
