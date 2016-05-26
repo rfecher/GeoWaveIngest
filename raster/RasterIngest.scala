@@ -1,19 +1,24 @@
 package com.example.ingest.raster
 
+import com.vividsolutions.jts.geom._
 import mil.nga.giat.geowave.adapter.raster.adapter.RasterDataAdapter
+import mil.nga.giat.geowave.adapter.raster.query.IndexOnlySpatialQuery
 import mil.nga.giat.geowave.core.geotime.ingest._
 import mil.nga.giat.geowave.core.store._
 import mil.nga.giat.geowave.core.store.index.PrimaryIndex
+import mil.nga.giat.geowave.core.store.query.QueryOptions
 import mil.nga.giat.geowave.datastore.accumulo._
 import mil.nga.giat.geowave.datastore.accumulo.index.secondary.AccumuloSecondaryIndexDataStore
 import mil.nga.giat.geowave.datastore.accumulo.metadata._
-
 import org.apache.log4j.Logger
 import org.geotools.coverage.grid._
 import org.geotools.coverage.grid.io._
 import org.geotools.gce.geotiff._
+import org.geotools.gce.geotiff.GeoTiffWriter
 import org.opengis.coverage.grid.GridCoverage
 import org.opengis.parameter.GeneralParameterValue
+
+import scala.collection.JavaConverters._
 
 
 object RasterIngest {
@@ -45,14 +50,35 @@ object RasterIngest {
     new GeoTiffReader(file).read(params)
   }
 
-  def getGeowaveDataStore(instance: BasicAccumuloOperations): DataStore = {
-    return new AccumuloDataStore(
-      new AccumuloIndexStore(instance),
-      new AccumuloAdapterStore(instance),
-      new AccumuloDataStatisticsStore(instance),
-      new AccumuloSecondaryIndexDataStore(instance),
-      new AccumuloAdapterIndexMappingStore(instance),
-      instance);
+  def poke(bo: BasicAccumuloOperations, img: GridCoverage2D): Unit = {
+    val coverageName = "coverageName" // This must not be empty
+    val metadata = new java.util.HashMap[String, String]()
+    val dataStore = new AccumuloDataStore(bo)
+    val index = createSpatialIndex
+    val adapter = new RasterDataAdapter(coverageName, metadata, img, 16, false) // img only used for metadata, not data
+    val indexWriter = dataStore.createWriter(adapter, index).asInstanceOf[IndexWriter[GridCoverage]]
+
+    indexWriter.write(img)
+    indexWriter.close
+  }
+
+  def peek(bo: BasicAccumuloOperations): Unit = {
+    val index = new SpatialDimensionalityTypeProvider.SpatialIndexBuilder().setAllTiers(true).createIndex()
+    val as = new AccumuloAdapterStore(bo)
+    val ds = new AccumuloDataStore(bo)
+    val adapter = as.getAdapters.next.asInstanceOf[RasterDataAdapter]
+    val queryOptions = new QueryOptions(adapter, index)
+    val geom = (new GeometryFactory).toGeometry(new Envelope(44.1, 44.7, 33.0, 33.6))
+    val query = new IndexOnlySpatialQuery(geom)
+
+    ds.query(queryOptions, query)
+      .asInstanceOf[CloseableIterator[GridCoverage2D]].asScala
+      .take(1024) // Limit number taken
+      .zip(Iterator.from(0))
+      .foreach({ case (gc: GridCoverage2D, i: Int) =>
+        val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/${i}.tif"))
+        writer.write(gc, Array.empty[GeneralParameterValue])
+      })
   }
 
   def main(args: Array[String]) : Unit = {
@@ -60,20 +86,11 @@ object RasterIngest {
       log.error("Invalid arguments, expected: zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace, rasterFile");
       System.exit(-1)
     }
-    val coverageName = "coverageName" // This must not be empty
-    val metadata = new java.util.HashMap[String, String]()
-    val image = getGridCoverage2D(args(5))
-
     val basicOperations = getAccumuloOperationsInstance(args(0), args(1), args(2), args(3), args(4))
-    val dataStore = getGeowaveDataStore(basicOperations)
-    val index = createSpatialIndex
-    // https://ngageoint.github.io/geowave/apidocs/mil/nga/giat/geowave/adapter/raster/adapter/RasterDataAdapter.html
-    val adapter = new RasterDataAdapter(coverageName, metadata, image, 16, false)
+    val gridCoverage = getGridCoverage2D(args(5))
 
-    val indexWriter = dataStore.createWriter(adapter, index).asInstanceOf[IndexWriter[GridCoverage]]
-
-    indexWriter.write(image)
-    indexWriter.close
+    println("POKE"); poke(basicOperations, gridCoverage)
+    println("PEEK"); peek(basicOperations)
   }
 
 }
