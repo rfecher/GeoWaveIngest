@@ -40,9 +40,6 @@ object RasterIngest {
       geowaveNamespace)
   }
 
-  def createSpatialIndex(): PrimaryIndex =
-    new SpatialDimensionalityTypeProvider().createPrimaryIndex
-
   def getGridCoverage2D(filename: String): GridCoverage2D = {
     val file = new java.io.File(filename)
     val params = Array[GeneralParameterValue]()
@@ -54,8 +51,8 @@ object RasterIngest {
     val coverageName = "coverageName" // This must not be empty
     val metadata = new java.util.HashMap[String, String]()
     val dataStore = new AccumuloDataStore(bo)
-    val index = createSpatialIndex
-    val adapter = new RasterDataAdapter(coverageName, metadata, img, 16, false) // img only used for metadata, not data
+    val index = new SpatialDimensionalityTypeProvider.SpatialIndexBuilder().setAllTiers(true).createIndex()
+    val adapter = new RasterDataAdapter(coverageName, metadata, img, 256, true) // img only used for metadata, not data
     val indexWriter = dataStore.createWriter(adapter, index).asInstanceOf[IndexWriter[GridCoverage]]
 
     indexWriter.write(img)
@@ -73,7 +70,6 @@ object RasterIngest {
 
     ds.query(queryOptions, query)
       .asInstanceOf[CloseableIterator[GridCoverage2D]].asScala
-      .take(1024) // Limit number taken
       .zip(Iterator.from(0))
       .foreach({ case (gc: GridCoverage2D, i: Int) =>
         val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/${i}.tif"))
