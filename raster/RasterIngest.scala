@@ -4,8 +4,10 @@ import com.vividsolutions.jts.geom._
 import mil.nga.giat.geowave.adapter.raster.adapter.RasterDataAdapter
 import mil.nga.giat.geowave.adapter.raster.query.IndexOnlySpatialQuery
 import mil.nga.giat.geowave.core.geotime.ingest._
+import mil.nga.giat.geowave.core.index.HierarchicalNumericIndexStrategy
+import mil.nga.giat.geowave.core.index.HierarchicalNumericIndexStrategy.SubStrategy
 import mil.nga.giat.geowave.core.store._
-import mil.nga.giat.geowave.core.store.index.PrimaryIndex
+import mil.nga.giat.geowave.core.store.index.{PrimaryIndex, CustomIdIndex}
 import mil.nga.giat.geowave.core.store.query.QueryOptions
 import mil.nga.giat.geowave.datastore.accumulo._
 import mil.nga.giat.geowave.datastore.accumulo.index.secondary.AccumuloSecondaryIndexDataStore
@@ -51,7 +53,7 @@ object RasterIngest {
     val coverageName = "coverageName" // This must not be empty
     val metadata = new java.util.HashMap[String, String]()
     val dataStore = new AccumuloDataStore(bo)
-    val index = new SpatialDimensionalityTypeProvider.SpatialIndexBuilder().setAllTiers(true).createIndex()
+    val index = (new SpatialDimensionalityTypeProvider.SpatialIndexBuilder).setAllTiers(true).createIndex()
     val adapter = new RasterDataAdapter(coverageName, metadata, img, 256, true) // img only used for metadata, not data
     val indexWriter = dataStore.createWriter(adapter, index).asInstanceOf[IndexWriter[GridCoverage]]
 
@@ -60,12 +62,19 @@ object RasterIngest {
   }
 
   def peek(bo: BasicAccumuloOperations): Unit = {
-    val index = new SpatialDimensionalityTypeProvider.SpatialIndexBuilder().setAllTiers(true).createIndex()
+    val index = (new SpatialDimensionalityTypeProvider.SpatialIndexBuilder).setAllTiers(true).createIndex()
     val as = new AccumuloAdapterStore(bo)
     val ds = new AccumuloDataStore(bo)
     val adapter = as.getAdapters.next.asInstanceOf[RasterDataAdapter]
-    val queryOptions = new QueryOptions(adapter, index)
-    val geom = (new GeometryFactory).toGeometry(new Envelope(44.1, 44.7, 33.0, 33.6))
+    val envelope = new Envelope(44.1, 44.7, 33.0, 33.6)
+    val geom = (new GeometryFactory).toGeometry(envelope)
+    val strats = index.getIndexStrategy.asInstanceOf[HierarchicalNumericIndexStrategy].getSubStrategies
+    val target = strats.filter({ substrat =>
+      val ranges = substrat.getIndexStrategy.getHighestPrecisionIdRangePerDimension
+      ((ranges(0) <= envelope.getWidth) && (ranges(1) <= envelope.getHeight))
+    }).head
+    val customIndex = new CustomIdIndex(target.getIndexStrategy, index.getIndexModel, index.getId)
+    val queryOptions = new QueryOptions(adapter, customIndex)
     val query = new IndexOnlySpatialQuery(geom)
 
     ds.query(queryOptions, query)
