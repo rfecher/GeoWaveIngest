@@ -1,4 +1,4 @@
-name := "ingest-raster"
+name := "raster-peek"
 
 fork in Test := false
 parallelExecution in Test := false

@@ -24,7 +24,11 @@ lazy val root = (project in file(".")).
   settings(commonSettings: _*).
   settings(libraryDependencies ++= generalDeps)
 
-lazy val raster = (project in file("raster")).
+lazy val rasterPoke = (project in file("raster-poke")).
+  dependsOn(root).
+  settings(commonSettings: _*)
+
+lazy val rasterPeek = (project in file("raster-peek")).
   dependsOn(root).
   settings(commonSettings: _*)
 

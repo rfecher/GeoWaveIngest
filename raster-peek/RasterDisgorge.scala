@@ -1,4 +1,4 @@
-package com.example.ingest.raster
+package com.example.raster
 
 import com.vividsolutions.jts.geom._
 import mil.nga.giat.geowave.adapter.raster.adapter.RasterDataAdapter
@@ -23,9 +23,9 @@ import org.opengis.parameter.GeneralParameterValue
 import scala.collection.JavaConverters._
 
 
-object RasterIngest {
+object RasterDisgorge {
 
-  val log = Logger.getLogger(RasterIngest.getClass)
+  val log = Logger.getLogger(RasterDisgorge.getClass)
 
   def getAccumuloOperationsInstance(
     zookeepers: String,
@@ -40,25 +40,6 @@ object RasterIngest {
       accumuloUser,
       accumuloPass,
       geowaveNamespace)
-  }
-
-  def getGridCoverage2D(filename: String): GridCoverage2D = {
-    val file = new java.io.File(filename)
-    val params = Array[GeneralParameterValue]()
-
-    new GeoTiffReader(file).read(params)
-  }
-
-  def poke(bo: BasicAccumuloOperations, img: GridCoverage2D): Unit = {
-    val coverageName = "coverageName" // This must not be empty
-    val metadata = new java.util.HashMap[String, String]()
-    val dataStore = new AccumuloDataStore(bo)
-    val index = (new SpatialDimensionalityTypeProvider.SpatialIndexBuilder).setAllTiers(true).createIndex()
-    val adapter = new RasterDataAdapter(coverageName, metadata, img, 256, true) // img only used for metadata, not data
-    val indexWriter = dataStore.createWriter(adapter, index).asInstanceOf[IndexWriter[GridCoverage]]
-
-    indexWriter.write(img)
-    indexWriter.close
   }
 
   def peek(bo: BasicAccumuloOperations): Unit = {
@@ -87,15 +68,13 @@ object RasterIngest {
   }
 
   def main(args: Array[String]) : Unit = {
-    if (args.length < 6) {
-      log.error("Invalid arguments, expected: zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace, rasterFile");
+    if (args.length < 5) {
+      log.error("Invalid arguments, expected: zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace");
       System.exit(-1)
     }
     val basicOperations = getAccumuloOperationsInstance(args(0), args(1), args(2), args(3), args(4))
-    val gridCoverage = getGridCoverage2D(args(5))
 
-    println("POKE"); poke(basicOperations, gridCoverage)
-    println("PEEK"); peek(basicOperations)
+    peek(basicOperations)
   }
 
 }
