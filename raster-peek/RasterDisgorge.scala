@@ -24,8 +24,8 @@ import org.apache.spark.SparkContext._
 import org.geotools.coverage.grid._
 import org.geotools.coverage.grid.io._
 import org.geotools.gce.geotiff._
+import org.opengis.feature.simple.SimpleFeature
 import org.opengis.parameter.GeneralParameterValue
-import org.apache.hadoop.io.ObjectWritable
 
 import scala.collection.JavaConverters._
 
@@ -50,7 +50,7 @@ object RasterDisgorge {
   }
 
   def peek(bo: BasicAccumuloOperations, aro: AccumuloRequiredOptions, sc: SparkContext): Unit = {
-    /* Construct Query */
+    /* Construct query */
     val index = (new SpatialDimensionalityTypeProvider.SpatialIndexBuilder).setAllTiers(true).createIndex()
     val as = new AccumuloAdapterStore(bo)
     val ds = new AccumuloDataStore(bo)
@@ -68,41 +68,43 @@ object RasterDisgorge {
 
     /* Construct org.apache.hadoop.conf.Configuration */
     val dspo = new DataStorePluginOptions
-    dspo.selectPlugin("accumulo")
     dspo.setFactoryOptions(aro)
     val configOptions = dspo.getFactoryOptionsAsMap
-    val config = Job.getInstance(sc.hadoopConfiguration).getConfiguration
+    val job = Job.getInstance(sc.hadoopConfiguration)
+    val config = job.getConfiguration
+    GeoWaveInputFormat.setDataStoreName(config, "accumulo")
     GeoWaveInputFormat.setStoreConfigOptions(config, configOptions)
-    // GeoWaveInputFormat.setQuery(config, query)
-    // GeoWaveInputFormat.setQueryOptions(config, queryOptions)
+    GeoWaveInputFormat.setQuery(config, query)
+    GeoWaveInputFormat.setQueryOptions(config, queryOptions)
 
+    /* Submit query */
     sc.newAPIHadoopRDD(
       config,
-      classOf[GeoWaveInputFormat[ObjectWritable]],
+      classOf[GeoWaveInputFormat[GridCoverage2D]],
       classOf[GeoWaveInputKey],
-      classOf[ObjectWritable]
-    )
-      .collect
-      // .foreach({ case (_, value) => println(value) })
-
-    // ds.query(queryOptions, query)
-    //   .asInstanceOf[CloseableIterator[GridCoverage2D]].asScala
-    //   .zip(Iterator.from(0))
-    //   .foreach({ case (gc: GridCoverage2D, i: Int) =>
-    //     val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/${i}.tif"))
-    //     writer.write(gc, Array.empty[GeneralParameterValue])
-    //   })
+      classOf[GridCoverage2D])
+      .foreach({ case (_, gc) =>
+        val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/${System.currentTimeMillis}.tif"))
+        writer.write(gc, Array.empty[GeneralParameterValue])
+      })
   }
 
   def main(args: Array[String]) : Unit = {
-    val sparkConf = new SparkConf().setAppName("GeoWaveInputFormat")
-    val sparkContext = new SparkContext(sparkConf)
-
     if (args.length < 5) {
       log.error("Invalid arguments, expected: zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace");
       System.exit(-1)
     }
-    val basicOperations = getAccumuloOperationsInstance(args(0), args(1), args(2), args(3), args(4))
+
+    val sparkConf = new SparkConf().setAppName("GeoWaveInputFormat")
+    val sparkContext = new SparkContext(sparkConf)
+
+    val basicOperations = getAccumuloOperationsInstance(
+      args(0),
+      args(1),
+      args(2),
+      args(3),
+      args(4)
+    )
 
     val accumuloRequiredOptions = new AccumuloRequiredOptions
     accumuloRequiredOptions.setZookeeper(args(0))
