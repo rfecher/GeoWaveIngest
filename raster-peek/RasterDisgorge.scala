@@ -52,9 +52,14 @@ object RasterDisgorge {
   def peek(bo: BasicAccumuloOperations, aro: AccumuloRequiredOptions, sc: SparkContext): Unit = {
     /* Construct query */
     val index = (new SpatialDimensionalityTypeProvider.SpatialIndexBuilder).setAllTiers(true).createIndex()
-    val as = new AccumuloAdapterStore(bo)
     val ds = new AccumuloDataStore(bo)
-    val adapter = as.getAdapters.next.asInstanceOf[RasterDataAdapter]
+    val adapter = {
+      val as = new AccumuloAdapterStore(bo).getAdapters
+      val adapter = as.next.asInstanceOf[RasterDataAdapter]
+
+      as.close
+      adapter
+    }
     val envelope = new Envelope(44.1, 44.7, 33.0, 33.6)
     val geom = (new GeometryFactory).toGeometry(envelope)
     val strats = index.getIndexStrategy.asInstanceOf[HierarchicalNumericIndexStrategy].getSubStrategies
