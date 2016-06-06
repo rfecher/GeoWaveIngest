@@ -21,13 +21,17 @@ lazy val commonSettings = Seq(
 )
 
 lazy val root = (project in file(".")).
-  settings(commonSettings: _*).
-  settings(libraryDependencies ++= generalDeps)
-
-lazy val raster = (project in file("raster")).
-  dependsOn(root).
   settings(commonSettings: _*)
+  .settings(libraryDependencies ++= generalDeps)
+
+lazy val rasterPoke = (project in file("raster-poke")).
+  dependsOn(root)
+  .settings(commonSettings: _*)
+
+lazy val rasterPeek = (project in file("raster-peek")).
+  dependsOn(root)
+  .settings(commonSettings: _*)
 
 lazy val vector = (project in file("vector")).
-  dependsOn(root).
-  settings(commonSettings: _*)
+  dependsOn(root)
+  .settings(commonSettings: _*)

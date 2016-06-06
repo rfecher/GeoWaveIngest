@@ -1,4 +1,4 @@
-package com.example.ingest.raster
+package com.example.raster
 
 import com.vividsolutions.jts.geom._
 import mil.nga.giat.geowave.adapter.raster.adapter.RasterDataAdapter
@@ -61,31 +61,6 @@ object RasterIngest {
     indexWriter.close
   }
 
-  def peek(bo: BasicAccumuloOperations): Unit = {
-    val index = (new SpatialDimensionalityTypeProvider.SpatialIndexBuilder).setAllTiers(true).createIndex()
-    val as = new AccumuloAdapterStore(bo)
-    val ds = new AccumuloDataStore(bo)
-    val adapter = as.getAdapters.next.asInstanceOf[RasterDataAdapter]
-    val envelope = new Envelope(44.1, 44.7, 33.0, 33.6)
-    val geom = (new GeometryFactory).toGeometry(envelope)
-    val strats = index.getIndexStrategy.asInstanceOf[HierarchicalNumericIndexStrategy].getSubStrategies
-    val target = strats.filter({ substrat =>
-      val ranges = substrat.getIndexStrategy.getHighestPrecisionIdRangePerDimension
-      ((ranges(0) <= envelope.getWidth) && (ranges(1) <= envelope.getHeight))
-    }).head
-    val customIndex = new CustomIdIndex(target.getIndexStrategy, index.getIndexModel, index.getId)
-    val queryOptions = new QueryOptions(adapter, customIndex)
-    val query = new IndexOnlySpatialQuery(geom)
-
-    ds.query(queryOptions, query)
-      .asInstanceOf[CloseableIterator[GridCoverage2D]].asScala
-      .zip(Iterator.from(0))
-      .foreach({ case (gc: GridCoverage2D, i: Int) =>
-        val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/${i}.tif"))
-        writer.write(gc, Array.empty[GeneralParameterValue])
-      })
-  }
-
   def main(args: Array[String]) : Unit = {
     if (args.length < 6) {
       log.error("Invalid arguments, expected: zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace, rasterFile");
@@ -94,8 +69,7 @@ object RasterIngest {
     val basicOperations = getAccumuloOperationsInstance(args(0), args(1), args(2), args(3), args(4))
     val gridCoverage = getGridCoverage2D(args(5))
 
-    println("POKE"); poke(basicOperations, gridCoverage)
-    println("PEEK"); peek(basicOperations)
+    poke(basicOperations, gridCoverage)
   }
 
 }

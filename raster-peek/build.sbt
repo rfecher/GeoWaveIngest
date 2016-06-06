@@ -1,4 +1,8 @@
-name := "ingest-raster"
+name := "raster-peek"
+libraryDependencies ++= Seq(
+  "org.apache.hadoop" % "hadoop-client" % Version.hadoop % "provided",
+  "org.apache.spark" %% "spark-core" % Version.spark % "provided"
+)
 
 fork in Test := false
 parallelExecution in Test := false
