@@ -5,6 +5,8 @@ val generalDeps = Seq(
     exclude("org.jboss.netty", "netty")
     exclude("org.apache.hadoop", "hadoop-client"),
   "org.apache.hadoop" % "hadoop-client" % "2.6.2"
+)
+
 val extraResolvers = Seq(
   "boundless" at "https://repo.boundlessgeo.com/release",
   "geowave" at "http://geowave-maven.s3-website-us-east-1.amazonaws.com/snapshot",
@@ -72,3 +74,9 @@ lazy val rasterPeek = (project in file("raster-peek")).
 lazy val vector = (project in file("vector")).
   dependsOn(root)
   .settings(commonSettings: _*)
+  .settings(resolvers ++= extraResolvers)
+  .settings(libraryDependencies ++= Seq(
+    "mil.nga.giat" % "geowave-adapter-vector" % Version.geowave,
+    "mil.nga.giat" % "geowave-core-store" % Version.geowave,
+    "mil.nga.giat" % "geowave-datastore-accumulo" % Version.geowave
+  ))
