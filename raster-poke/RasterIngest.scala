@@ -14,9 +14,7 @@ import mil.nga.giat.geowave.datastore.accumulo.index.secondary.AccumuloSecondary
 import mil.nga.giat.geowave.datastore.accumulo.metadata._
 import org.apache.log4j.Logger
 import org.geotools.coverage.grid._
-import org.geotools.coverage.grid.io._
 import org.geotools.gce.geotiff._
-import org.geotools.gce.geotiff.GeoTiffWriter
 import org.opengis.coverage.grid.GridCoverage
 import org.opengis.parameter.GeneralParameterValue
 
