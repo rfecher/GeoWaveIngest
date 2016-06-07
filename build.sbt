@@ -8,9 +8,8 @@ val generalDeps = Seq(
 )
 
 val extraResolvers = Seq(
-  "boundless" at "https://repo.boundlessgeo.com/release",
-  "geowave" at "http://geowave-maven.s3-website-us-east-1.amazonaws.com/snapshot",
-  "osgeo" at "http://download.osgeo.org/webdav/geotools/"
+  "osgeo" at "http://download.osgeo.org/webdav/geotools/",
+  "geowave" at "http://geowave-maven.s3-website-us-east-1.amazonaws.com/snapshot"
 )
 
 lazy val commonSettings = Seq(
@@ -47,36 +46,36 @@ lazy val commonSettings = Seq(
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 )
 
-lazy val root = (project in file(".")).
-  settings(commonSettings: _*)
+lazy val root = (project in file("."))
+  .settings(commonSettings: _*)
   .settings(libraryDependencies ++= generalDeps)
 
-lazy val rasterPoke = (project in file("raster-poke")).
-  dependsOn(root)
+lazy val rasterPoke = (project in file("raster-poke"))
+  .dependsOn(root)
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
   .settings(libraryDependencies ++= Seq(
-    "mil.nga.giat" % "geowave-adapter-raster" % Version.geowave,
-    "mil.nga.giat" % "geowave-core-store" % Version.geowave,
-    "mil.nga.giat" % "geowave-datastore-accumulo" % Version.geowave
+    "mil.nga.giat" % "geowave-adapter-raster" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4"),
+    "mil.nga.giat" % "geowave-core-store" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4"),
+    "mil.nga.giat" % "geowave-datastore-accumulo" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4")
   ))
 
-lazy val rasterPeek = (project in file("raster-peek")).
-  dependsOn(root)
+lazy val rasterPeek = (project in file("raster-peek"))
+  .dependsOn(root)
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
   .settings(libraryDependencies ++= Seq(
-    "mil.nga.giat" % "geowave-adapter-raster" % Version.geowave,
-    "mil.nga.giat" % "geowave-core-store" % Version.geowave,
-    "mil.nga.giat" % "geowave-datastore-accumulo" % Version.geowave
+    "mil.nga.giat" % "geowave-adapter-raster" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4"),
+    "mil.nga.giat" % "geowave-core-store" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4"),
+    "mil.nga.giat" % "geowave-datastore-accumulo" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4")
   ))
 
-lazy val vector = (project in file("vector")).
-  dependsOn(root)
+lazy val vector = (project in file("vector"))
+  .dependsOn(root)
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
   .settings(libraryDependencies ++= Seq(
-    "mil.nga.giat" % "geowave-adapter-vector" % Version.geowave,
-    "mil.nga.giat" % "geowave-core-store" % Version.geowave,
-    "mil.nga.giat" % "geowave-datastore-accumulo" % Version.geowave
+    "mil.nga.giat" % "geowave-adapter-vector" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4"),
+    "mil.nga.giat" % "geowave-core-store" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4"),
+    "mil.nga.giat" % "geowave-datastore-accumulo" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4")
   ))
