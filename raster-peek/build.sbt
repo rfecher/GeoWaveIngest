@@ -1,23 +1,7 @@
 name := "raster-peek"
 libraryDependencies ++= Seq(
   "org.apache.hadoop" % "hadoop-client" % Version.hadoop % "provided",
-  "org.apache.spark" %% "spark-core" % Version.spark % "provided",
-  "mil.nga.giat" % "geowave-adapter-vector" % Version.geowave,
-  "mil.nga.giat" % "geowave-core-cli" % Version.geowave,
-  "mil.nga.giat" % "geowave-core-ingest" % Version.geowave,
-  "mil.nga.giat" % "geowave-core-mapreduce" % Version.geowave,
-  "mil.nga.giat" % "geowave-core-store" % Version.geowave,
-  "mil.nga.giat" % "geowave-datastore-accumulo" % Version.geowave,
-  "org.geoserver" % "gs-wms" % Version.geoserver,
-  "org.geotools" % "gt-epsg-wkt" % Version.geotools,
-  "org.geotools" % "gt-render" % Version.geotools,
-  "org.geotools" % "gt-wps" % Version.geotools
-)
-
-resolvers ++= Seq(
-  "boundless" at "https://repo.boundlessgeo.com/release",
-  "geowave" at "http://geowave-maven.s3-website-us-east-1.amazonaws.com/snapshot",
-  "osgeo" at "http://download.osgeo.org/webdav/geotools/"
+  "org.apache.spark" %% "spark-core" % Version.spark % "provided"
 )
 
 fork in Test := false

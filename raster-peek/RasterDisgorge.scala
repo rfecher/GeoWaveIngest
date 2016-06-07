@@ -15,16 +15,13 @@ import mil.nga.giat.geowave.datastore.accumulo.index.secondary.AccumuloSecondary
 import mil.nga.giat.geowave.datastore.accumulo.metadata._
 import mil.nga.giat.geowave.datastore.accumulo.operations.config.AccumuloRequiredOptions
 import mil.nga.giat.geowave.mapreduce.input.{GeoWaveInputKey, GeoWaveInputFormat}
-import org.apache.accumulo.core.data.{Key, Value}
 import org.apache.hadoop.mapreduce.Job
 import org.apache.log4j.Logger
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.geotools.coverage.grid._
-import org.geotools.coverage.grid.io._
 import org.geotools.gce.geotiff._
-import org.opengis.feature.simple.SimpleFeature
 import org.opengis.parameter.GeneralParameterValue
 
 import scala.collection.JavaConverters._

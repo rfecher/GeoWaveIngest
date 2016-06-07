@@ -62,6 +62,12 @@ lazy val rasterPoke = (project in file("raster-poke")).
 lazy val rasterPeek = (project in file("raster-peek")).
   dependsOn(root)
   .settings(commonSettings: _*)
+  .settings(resolvers ++= extraResolvers)
+  .settings(libraryDependencies ++= Seq(
+    "mil.nga.giat" % "geowave-adapter-raster" % Version.geowave,
+    "mil.nga.giat" % "geowave-core-store" % Version.geowave,
+    "mil.nga.giat" % "geowave-datastore-accumulo" % Version.geowave
+  ))
 
 lazy val vector = (project in file("vector")).
   dependsOn(root)
