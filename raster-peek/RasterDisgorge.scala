@@ -1,10 +1,16 @@
 package com.example.raster
 
-import com.vividsolutions.jts.geom._
+import geotrellis.raster._
+import geotrellis.spark._
+import geotrellis.spark.io._
 import geotrellis.spark.io.geowave._
+
+import com.vividsolutions.jts.geom._
 import mil.nga.giat.geowave.adapter.raster.adapter.RasterDataAdapter
 import mil.nga.giat.geowave.adapter.raster.query.IndexOnlySpatialQuery
 import mil.nga.giat.geowave.core.geotime.ingest._
+import mil.nga.giat.geowave.core.geotime.store.statistics.BoundingBoxDataStatistics
+import mil.nga.giat.geowave.core.index.ByteArrayId
 import mil.nga.giat.geowave.core.index.HierarchicalNumericIndexStrategy
 import mil.nga.giat.geowave.core.index.HierarchicalNumericIndexStrategy.SubStrategy
 import mil.nga.giat.geowave.core.store._
@@ -47,6 +53,17 @@ object RasterDisgorge {
       geowaveNamespace)
   }
 
+  def report(bo: BasicAccumuloOperations, adapter: RasterDataAdapter): Unit = {
+    val dss = new AccumuloDataStatisticsStore(bo)
+    val aid = adapter.getAdapterId
+    val bboxStats = BoundingBoxDataStatistics.STATS_ID
+    val bbox = dss.getDataStatistics(aid, bboxStats).asInstanceOf[BoundingBoxDataStatistics[Any]]
+    val sm = adapter.getSampleModel
+
+    println(s"Extent <- $bbox ${bbox.getMinX} ${bbox.getMinY} ${bbox.getMaxX} ${bbox.getMaxY}")
+    println(s"TileLayout <- ${adapter.getTileSize}")
+  }
+
   def peek(bo: BasicAccumuloOperations, aro: AccumuloRequiredOptions, sc: SparkContext): Unit = {
     /* Construct query */
     val index = (new SpatialDimensionalityTypeProvider.SpatialIndexBuilder).setAllTiers(true).createIndex()
@@ -59,7 +76,8 @@ object RasterDisgorge {
       adapter
     }
     val envelope = new Envelope(44.1, 44.7, 33.0, 33.6)
-    val geom = (new GeometryFactory).toGeometry(envelope)
+    // val geom = (new GeometryFactory).toGeometry(envelope)
+    val geom = (new GeometryFactory).createPoint(new Coordinate(43.9453126, 32.6953126))
     val strats = index.getIndexStrategy.asInstanceOf[HierarchicalNumericIndexStrategy].getSubStrategies
     val target = strats.filter({ substrat =>
       val ranges = substrat.getIndexStrategy.getHighestPrecisionIdRangePerDimension
@@ -80,6 +98,8 @@ object RasterDisgorge {
     GeoWaveInputFormat.setQuery(config, query)
     GeoWaveInputFormat.setQueryOptions(config, queryOptions)
 
+    report(bo, adapter)
+
     /* Submit query */
     sc.newAPIHadoopRDD(
       config,
@@ -87,7 +107,10 @@ object RasterDisgorge {
       classOf[GeoWaveInputKey],
       classOf[GridCoverage2D])
       .foreach({ case (_, gc) =>
-        val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/${System.currentTimeMillis}.tif"))
+        val filename = s"${System.currentTimeMillis}.tif"
+        val writer = new GeoTiffWriter(new java.io.File("/tmp/tif/" + filename))
+
+        println(filename)
         writer.write(gc, Array.empty[GeneralParameterValue])
       })
   }
@@ -102,11 +125,7 @@ object RasterDisgorge {
     val sparkContext = new SparkContext(sparkConf)
 
     val basicOperations = getAccumuloOperationsInstance(
-      args(0),
-      args(1),
-      args(2),
-      args(3),
-      args(4)
+      args(0), args(1), args(2), args(3), args(4)
     )
 
     val accumuloRequiredOptions = new AccumuloRequiredOptions
@@ -117,6 +136,18 @@ object RasterDisgorge {
     accumuloRequiredOptions.setGeowaveNamespace(args(4))
 
     peek(basicOperations, accumuloRequiredOptions, sparkContext)
+
+    /* GeoTrellis Peek */
+    implicit val sc = sparkContext
+    val attributeStore = new GeowaveAttributeStore(args(0), args(1), args(2), args(3), args(4))
+    val layerId = LayerId("coverageName", 10)
+    val catalog = new GeowaveLayerReader(attributeStore)
+    val rdd = catalog.read[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](layerId, null, 42, true)
+
+    println(rdd.metadata)
+    rdd.foreach({ case (k,v) =>
+      println(s"key=$k value=$v")
+    })
   }
 
 }
