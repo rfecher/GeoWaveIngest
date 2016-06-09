@@ -46,6 +46,8 @@ lazy val commonSettings = Seq(
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 )
 
+val url = "http://geowave-maven.s3-website-us-east-1.amazonaws.com/snapshot/mil/nga/giat/geowave-core-store/0.9.2-SNAPSHOT/"
+
 lazy val root = (project in file("."))
   .settings(commonSettings: _*)
   .settings(libraryDependencies ++= generalDeps)
@@ -55,9 +57,16 @@ lazy val rasterPoke = (project in file("raster-poke"))
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
   .settings(libraryDependencies ++= Seq(
-    "mil.nga.giat" % "geowave-adapter-raster" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4"),
-    "mil.nga.giat" % "geowave-core-store" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4"),
-    "mil.nga.giat" % "geowave-datastore-accumulo" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4")
+    // Based on https://github.com/sbt/sbt/issues/1325, it seems the
+    // only way to do this without an additional plugin is to give
+    // explicit URLs.
+    "mil.nga.giat" % "geowave-adapter-raster" % "0.9.2-SNAPSHOT" from url + "geowave-adapter-raster-0.9.2-20160607.112146-7.jar",
+    "mil.nga.giat" % "geowave-core-store" % "0.9.2-SNAPSHOT" from url + "geowave-core-store-0.9.2-20160607.112053-7.jar",
+    "mil.nga.giat" % "geowave-datastore-accumulo" % "0.9.2-SNAPSHOT" from url + "geowave-datastore-accumulo-0.9.2-20160607.112239-4.jar",
+    "mil.nga.giat" % "geowave-core-cli" % "0.9.2-SNAPSHOT" from url + "geowave-core-cli-0.9.2-20160607.112039-7.jar",
+    "mil.nga.giat" % "geowave-core-geotime" % "0.9.2-SNAPSHOT" from url + "geowave-core-geotime-0.9.2-20160607.112122-7.jar",
+    "mil.nga.giat" % "geowave-core-index" % "0.9.2-SNAPSHOT" from url + "geowave-core-index-0.9.2-20160607.112045-7.jar",
+    "mil.nga.giat" % "geowave-core-mapreduce" % "0.9.2-SNAPSHOT" from url + "geowave-core-mapreduce-0.9.2-20160607.112109-7.jar"
   ))
 
 lazy val rasterPeek = (project in file("raster-peek"))
@@ -65,9 +74,13 @@ lazy val rasterPeek = (project in file("raster-peek"))
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
   .settings(libraryDependencies ++= Seq(
-    "mil.nga.giat" % "geowave-adapter-raster" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4"),
-    "mil.nga.giat" % "geowave-core-store" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4"),
-    "mil.nga.giat" % "geowave-datastore-accumulo" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4")
+    "mil.nga.giat" % "geowave-adapter-raster" % "0.9.2-SNAPSHOT" from url + "geowave-adapter-raster-0.9.2-20160607.112146-7.jar",
+    "mil.nga.giat" % "geowave-core-store" % "0.9.2-SNAPSHOT" from url + "geowave-core-store-0.9.2-20160607.112053-7.jar",
+    "mil.nga.giat" % "geowave-datastore-accumulo" % "0.9.2-SNAPSHOT" from url + "geowave-datastore-accumulo-0.9.2-20160607.112239-4.jar",
+    "mil.nga.giat" % "geowave-core-cli" % "0.9.2-SNAPSHOT" from url + "geowave-core-cli-0.9.2-20160607.112039-7.jar",
+    "mil.nga.giat" % "geowave-core-geotime" % "0.9.2-SNAPSHOT" from url + "geowave-core-geotime-0.9.2-20160607.112122-7.jar",
+    "mil.nga.giat" % "geowave-core-index" % "0.9.2-SNAPSHOT" from url + "geowave-core-index-0.9.2-20160607.112045-7.jar",
+    "mil.nga.giat" % "geowave-core-mapreduce" % "0.9.2-SNAPSHOT" from url + "geowave-core-mapreduce-0.9.2-20160607.112109-7.jar"
   ))
 
 lazy val vector = (project in file("vector"))
@@ -75,7 +88,11 @@ lazy val vector = (project in file("vector"))
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
   .settings(libraryDependencies ++= Seq(
-    "mil.nga.giat" % "geowave-adapter-vector" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4"),
-    "mil.nga.giat" % "geowave-core-store" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4"),
-    "mil.nga.giat" % "geowave-datastore-accumulo" % "0.9.2-SNAPSHOT" extra("timestamp" -> "0.9.2-20160607.112500-4")
+    "mil.nga.giat" % "geowave-adapter-vector",
+    "mil.nga.giat" % "geowave-core-store" % "0.9.2-SNAPSHOT" from url + "geowave-core-store-0.9.2-20160607.112053-7.jar",
+    "mil.nga.giat" % "geowave-datastore-accumulo" % "0.9.2-SNAPSHOT" from url + "geowave-datastore-accumulo-0.9.2-20160607.112239-4.jar",
+    "mil.nga.giat" % "geowave-core-cli" % "0.9.2-SNAPSHOT" from url + "geowave-core-cli-0.9.2-20160607.112039-7.jar",
+    "mil.nga.giat" % "geowave-core-geotime" % "0.9.2-SNAPSHOT" from url + "geowave-core-geotime-0.9.2-20160607.112122-7.jar",
+    "mil.nga.giat" % "geowave-core-index" % "0.9.2-SNAPSHOT" from url + "geowave-core-index-0.9.2-20160607.112045-7.jar",
+    "mil.nga.giat" % "geowave-core-mapreduce" % "0.9.2-SNAPSHOT" from url + "geowave-core-mapreduce-0.9.2-20160607.112109-7.jar"
   ))
