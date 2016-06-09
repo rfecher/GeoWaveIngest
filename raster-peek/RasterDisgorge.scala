@@ -1,6 +1,7 @@
 package com.example.raster
 
 import com.vividsolutions.jts.geom._
+import geotrellis.spark.io.geowave._
 import mil.nga.giat.geowave.adapter.raster.adapter.RasterDataAdapter
 import mil.nga.giat.geowave.adapter.raster.query.IndexOnlySpatialQuery
 import mil.nga.giat.geowave.core.geotime.ingest._
