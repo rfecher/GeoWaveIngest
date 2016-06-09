@@ -57,9 +57,6 @@ lazy val rasterPoke = (project in file("raster-poke"))
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
   .settings(libraryDependencies ++= Seq(
-    // Based on https://github.com/sbt/sbt/issues/1325, it seems the
-    // only way to do this without an additional plugin is to give
-    // explicit URLs.
     "mil.nga.giat" % "geowave-adapter-raster" % "0.9.2-SNAPSHOT",
     "mil.nga.giat" % "geowave-core-store" % "0.9.2-SNAPSHOT",
     "mil.nga.giat" % "geowave-datastore-accumulo" % "0.9.2-SNAPSHOT"
