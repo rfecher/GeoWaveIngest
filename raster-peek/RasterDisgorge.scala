@@ -1,5 +1,7 @@
 package com.example.raster
 
+import geotrellis.geotools._
+import geotrellis.proj4.LatLng
 import geotrellis.raster._
 import geotrellis.spark._
 import geotrellis.spark.io._
@@ -76,8 +78,7 @@ object RasterDisgorge {
       adapter
     }
     val envelope = new Envelope(44.1, 44.7, 33.0, 33.6)
-    // val geom = (new GeometryFactory).toGeometry(envelope)
-    val geom = (new GeometryFactory).createPoint(new Coordinate(43.9453126, 32.6953126))
+    val geom = (new GeometryFactory).toGeometry(envelope)
     val strats = index.getIndexStrategy.asInstanceOf[HierarchicalNumericIndexStrategy].getSubStrategies
     val target = strats.filter({ substrat =>
       val ranges = substrat.getIndexStrategy.getHighestPrecisionIdRangePerDimension
@@ -106,11 +107,12 @@ object RasterDisgorge {
       classOf[GeoWaveInputFormat[GridCoverage2D]],
       classOf[GeoWaveInputKey],
       classOf[GridCoverage2D])
+      .collect
       .foreach({ case (_, gc) =>
         val filename = s"${System.currentTimeMillis}.tif"
-        val writer = new GeoTiffWriter(new java.io.File("/tmp/tif/" + filename))
+        val writer = new GeoTiffWriter(new java.io.File("/tmp/tif/direct-" + filename))
 
-        println(filename)
+        println(s"$gc")
         writer.write(gc, Array.empty[GeneralParameterValue])
       })
   }
@@ -124,9 +126,7 @@ object RasterDisgorge {
     val sparkConf = new SparkConf().setAppName("GeoWaveInputFormat")
     val sparkContext = new SparkContext(sparkConf)
 
-    val basicOperations = getAccumuloOperationsInstance(
-      args(0), args(1), args(2), args(3), args(4)
-    )
+    val basicOperations = getAccumuloOperationsInstance(args(0), args(1), args(2), args(3), args(4))
 
     val accumuloRequiredOptions = new AccumuloRequiredOptions
     accumuloRequiredOptions.setZookeeper(args(0))
@@ -140,13 +140,27 @@ object RasterDisgorge {
     /* GeoTrellis Peek */
     implicit val sc = sparkContext
     val attributeStore = new GeowaveAttributeStore(args(0), args(1), args(2), args(3), args(4))
+
+    println(attributeStore.getBoundingBoxes)
+    println(attributeStore.getLeastZooms)
+    println(attributeStore.layerIds)
+
     val layerId = LayerId("coverageName", 10)
     val catalog = new GeowaveLayerReader(attributeStore)
     val rdd = catalog.read[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](layerId, null, 42, true)
+    val md = rdd.metadata
+    val mt = md.mapTransform
 
-    println(rdd.metadata)
-    rdd.foreach({ case (k,v) =>
-      println(s"key=$k value=$v")
+    println(md)
+    rdd.collect.foreach({ case (k, v) =>
+      val extent = mt(k)
+      val pr = ProjectedRaster(Raster(v, extent), LatLng)
+      val gc = pr.toGridCoverage2D
+      val filename = s"${System.currentTimeMillis}.tif"
+      val writer = new GeoTiffWriter(new java.io.File("/tmp/tif/geotrellis-" + filename))
+
+      println(s"$k $extent $gc")
+      writer.write(gc, Array.empty[GeneralParameterValue])
     })
   }
 
