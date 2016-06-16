@@ -2,6 +2,7 @@ name := "raster-peek"
 libraryDependencies ++= Seq(
   "com.azavea.geotrellis" %% "geotrellis-geotools" % "1.0.0-SNAPSHOT",
   "com.azavea.geotrellis" %% "geotrellis-geowave" % "1.0.0-SNAPSHOT",
+  "com.azavea.geotrellis" %% "geotrellis-vector" % "1.0.0-SNAPSHOT",
   "org.apache.hadoop" % "hadoop-client" % Version.hadoop % "provided",
   "org.apache.spark" %% "spark-core" % Version.spark % "provided"
 )
