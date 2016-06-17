@@ -6,8 +6,9 @@ import geotrellis.raster._
 import geotrellis.spark._
 import geotrellis.spark.io._
 import geotrellis.spark.io.geowave._
+import geotrellis.vector._
 
-import com.vividsolutions.jts.geom._
+import com.vividsolutions.jts.geom.{Envelope, GeometryFactory}
 import mil.nga.giat.geowave.adapter.raster.adapter.RasterDataAdapter
 import mil.nga.giat.geowave.adapter.raster.query.IndexOnlySpatialQuery
 import mil.nga.giat.geowave.core.geotime.ingest._
@@ -40,6 +41,9 @@ object RasterDisgorge {
 
   val log = Logger.getLogger(RasterDisgorge.getClass)
 
+  /**
+    * Construct a BasicAccumuloOperations from the given data.
+    */
   def getAccumuloOperationsInstance(
     zookeepers: String,
     accumuloInstance: String,
@@ -55,6 +59,10 @@ object RasterDisgorge {
       geowaveNamespace)
   }
 
+  /**
+    * Report various metainformation.  This information is roughly
+    * equivalent to that contained in a Geotrellis LayerMetadata.
+    */
   def report(bo: BasicAccumuloOperations, adapter: RasterDataAdapter): Unit = {
     val dss = new AccumuloDataStatisticsStore(bo)
     val aid = adapter.getAdapterId
@@ -66,6 +74,10 @@ object RasterDisgorge {
     println(s"TileLayout <- ${adapter.getTileSize}")
   }
 
+  /**
+    * Use a GeoWaveInputFormat-style Query to peek into the GeoWave
+    * database.
+    */
   def peek(bo: BasicAccumuloOperations, aro: AccumuloRequiredOptions, sc: SparkContext): Unit = {
     /* Construct query */
     val index = (new SpatialDimensionalityTypeProvider.SpatialIndexBuilder).setAllTiers(true).createIndex()
@@ -109,35 +121,40 @@ object RasterDisgorge {
       classOf[GridCoverage2D])
       .collect
       .foreach({ case (_, gc) =>
-        val filename = s"${System.currentTimeMillis}.tif"
-        val writer = new GeoTiffWriter(new java.io.File("/tmp/tif/direct-" + filename))
-
-        println(s"$gc")
+        val file = new java.io.File("/tmp/tif/direct-${System.currentTimeMillis}.tif")
+        val writer = new GeoTiffWriter(file)
         writer.write(gc, Array.empty[GeneralParameterValue])
       })
   }
 
+  /**
+    * Main Function
+    */
   def main(args: Array[String]) : Unit = {
     if (args.length < 5) {
       log.error("Invalid arguments, expected: zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace");
       System.exit(-1)
     }
 
+    /* ======================================================================== */
+
     val sparkConf = new SparkConf().setAppName("GeoWaveInputFormat")
     val sparkContext = new SparkContext(sparkConf)
-
     val basicOperations = getAccumuloOperationsInstance(args(0), args(1), args(2), args(3), args(4))
-
-    val accumuloRequiredOptions = new AccumuloRequiredOptions
-    accumuloRequiredOptions.setZookeeper(args(0))
-    accumuloRequiredOptions.setInstance(args(1))
-    accumuloRequiredOptions.setUser(args(2))
-    accumuloRequiredOptions.setPassword(args(3))
-    accumuloRequiredOptions.setGeowaveNamespace(args(4))
+    val accumuloRequiredOptions = {
+      val aro = new AccumuloRequiredOptions
+      aro.setZookeeper(args(0))
+      aro.setInstance(args(1))
+      aro.setUser(args(2))
+      aro.setPassword(args(3))
+      aro.setGeowaveNamespace(args(4))
+      aro
+    }
 
     peek(basicOperations, accumuloRequiredOptions, sparkContext)
 
-    /* GeoTrellis Peek */
+    /* ======================================================================== */
+
     implicit val sc = sparkContext
     val attributeStore = new GeowaveAttributeStore(args(0), args(1), args(2), args(3), args(4))
 
@@ -145,23 +162,49 @@ object RasterDisgorge {
     println(attributeStore.getLeastZooms)
     println(attributeStore.layerIds)
 
-    val layerId = LayerId("coverageName", 10)
+    val layerName = "coverageName"
     val catalog = new GeowaveLayerReader(attributeStore)
-    val rdd = catalog.read[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](layerId, null, 42, true)
-    val md = rdd.metadata
-    val mt = md.mapTransform
+    val polygon = Polygon(List(
+      // Latitude, Longitude
+      Point(32.6953125, 43.9453125),
+      Point(32.6953125, 45.0),
+      Point(33.75, 45.0),
+      Point(33.75, 43.9453125),
+      Point(32.6953125, 43.9453125)))
 
-    println(md)
+    println("---------------------------------")
+    val rdd = catalog
+      .query[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](LayerId(layerName, 10))
+      .where(Intersects(polygon.envelope))
+      .result
+    val mt = rdd.metadata.mapTransform
+    println(s"METADATA=${rdd.metadata}")
     rdd.collect.foreach({ case (k, v) =>
       val extent = mt(k)
       val pr = ProjectedRaster(Raster(v, extent), LatLng)
       val gc = pr.toGridCoverage2D
-      val filename = s"${System.currentTimeMillis}.tif"
-      val writer = new GeoTiffWriter(new java.io.File("/tmp/tif/geotrellis-" + filename))
+      val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/geotrellis-${System.currentTimeMillis}.tif"))
 
       println(s"$k $extent $gc")
       writer.write(gc, Array.empty[GeneralParameterValue])
     })
+
+
+    println("---------------------------------")
+    catalog
+      .query[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](LayerId(layerName, 10))
+      .where(Intersects(Point(32.701, 44.7499).envelope) or Intersects(Point(33.399, 44.301).envelope))
+      .result
+      .collect
+      .foreach({ case (k, v) => println(s"$k $v") })
+
+    println("---------------------------------")
+    catalog
+      .query[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](LayerId(layerName, 14))
+      .where(Intersects(Point(32.701, 44.7499).envelope) or Intersects(Point(33.399, 44.301).envelope))
+      .result
+      .collect
+      .foreach({ case (k, v) => println(s"$k $v") })
   }
 
 }
