@@ -121,7 +121,7 @@ object RasterDisgorge {
       classOf[GridCoverage2D])
       .collect
       .foreach({ case (_, gc) =>
-        val file = new java.io.File("/tmp/tif/direct-${System.currentTimeMillis}.tif")
+        val file = new java.io.File(s"/tmp/tif/direct-${System.currentTimeMillis}.tif")
         val writer = new GeoTiffWriter(file)
         writer.write(gc, Array.empty[GeneralParameterValue])
       })
