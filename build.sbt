@@ -54,28 +54,18 @@ lazy val rasterPoke = (project in file("raster-poke"))
   .dependsOn(root)
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
-  .settings(libraryDependencies ++= Seq(
-    "mil.nga.giat" % "geowave-adapter-raster" % "0.9.2-SNAPSHOT",
-    "mil.nga.giat" % "geowave-core-store" % "0.9.2-SNAPSHOT",
-    "mil.nga.giat" % "geowave-datastore-accumulo" % "0.9.2-SNAPSHOT"
-  ))
+
+lazy val superPoke = (project in file("super-poke"))
+  .dependsOn(root)
+  .settings(commonSettings: _*)
+  .settings(resolvers ++= extraResolvers)
 
 lazy val rasterPeek = (project in file("raster-peek"))
   .dependsOn(root)
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
-  .settings(libraryDependencies ++= Seq(
-    "mil.nga.giat" % "geowave-adapter-raster" % "0.9.2-SNAPSHOT",
-    "mil.nga.giat" % "geowave-core-store" % "0.9.2-SNAPSHOT",
-    "mil.nga.giat" % "geowave-datastore-accumulo" % "0.9.2-SNAPSHOT"
-  ))
 
 lazy val vector = (project in file("vector"))
   .dependsOn(root)
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
-  .settings(libraryDependencies ++= Seq(
-    "mil.nga.giat" % "geowave-adapter-vector" % "0.9.2-SNAPSHOT",
-    "mil.nga.giat" % "geowave-core-store" % "0.9.2-SNAPSHOT",
-    "mil.nga.giat" % "geowave-datastore-accumulo" % "0.9.2-SNAPSHOT"
-  ))
