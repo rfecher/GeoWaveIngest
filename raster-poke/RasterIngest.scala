@@ -49,7 +49,7 @@ object RasterIngest {
 
   def poke(bo: BasicAccumuloOperations, img: GridCoverage2D): Unit = {
     val coverageName = "coverageName" // This must not be empty
-    val metadata = new java.util.HashMap[String, String]()
+    val metadata = new java.util.HashMap[String, String](); metadata.put("cellType", "uint8raw")
     val dataStore = new AccumuloDataStore(bo)
     val index = (new SpatialDimensionalityTypeProvider.SpatialIndexBuilder).setAllTiers(true).createIndex()
     val adapter = new RasterDataAdapter(coverageName, metadata, img, 256, true) // img only used for metadata, not data

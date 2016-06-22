@@ -46,8 +46,6 @@ lazy val commonSettings = Seq(
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 )
 
-val url = "http://geowave-maven.s3-website-us-east-1.amazonaws.com/snapshot/mil/nga/giat/geowave-core-store/0.9.2-SNAPSHOT/"
-
 lazy val root = (project in file("."))
   .settings(commonSettings: _*)
   .settings(libraryDependencies ++= generalDeps)
