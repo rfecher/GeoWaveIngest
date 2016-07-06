@@ -1,4 +1,4 @@
-name := "raster-peek"
+name := "super-poke"
 libraryDependencies ++= Seq(
   "com.azavea.geotrellis" %% "geotrellis-geotools" % "1.0.0-SNAPSHOT",
   "com.azavea.geotrellis" %% "geotrellis-geowave" % "1.0.0-SNAPSHOT",
