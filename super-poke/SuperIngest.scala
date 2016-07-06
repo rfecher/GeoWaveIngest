@@ -3,7 +3,7 @@ package com.example.raster
 import geotrellis.raster._
 import geotrellis.spark._
 import geotrellis.spark.io._
-import geotrellis.spark.io.file._
+import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.geowave._
 import geotrellis.spark.io.index._
 
@@ -18,7 +18,7 @@ object SuperIngest {
 
   def main(args: Array[String]) : Unit = {
     if (args.length < 9) {
-      log.error("Invalid arguments, expected: <zookeepers> <accumuloInstance> <accumuloUser> <accumuloPass> <geowaveNamespace> <local catalog path> <zoomlevel> <key> <tile>");
+      log.error("Invalid arguments, expected: <zookeepers> <accumuloInstance> <accumuloUser> <accumuloPass> <geowaveNamespace> <HadoopPath> <LayerName> <ZoomLevel> <KeyType> <TileType>");
       System.exit(-1)
     }
 
@@ -26,33 +26,31 @@ object SuperIngest {
     val sparkContext = new SparkContext(sparkConf)
     implicit val sc = sparkContext
 
-    val fas = FileAttributeStore(args(5))
-    val flr = FileLayerReader(fas)
-    val gwas = new GeowaveAttributeStore(args(0), args(1), args(2), args(3), args(4))
-    val gwlw = new GeowaveLayerWriter(gwas)
-    val layerId = LayerId("landsat", args(6).toInt)
+    val inAttributeStore = HadoopAttributeStore(args(5))
+    val layerReader = HadoopLayerReader(inAttributeStore)
+    val outAttributeStore = new GeowaveAttributeStore(args(0), args(1), args(2), args(3), args(4))
+    val layerWriter = new GeowaveLayerWriter(outAttributeStore)
+    val layerId = LayerId(args(6), args(7).toInt)
 
-    (args(7), args(8)) match {
+    (args(8), args(9)) match {
       case ("SpatialKey", "Tile") =>
-        val rdd = flr.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId)
-        val rdd1 = ContextRDD(sc.parallelize(rdd.take(1)), rdd.metadata)
-        gwlw.write(layerId, rdd1, ZCurveKeyIndexMethod)
+        val rdd = layerReader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId)
+        layerWriter.write(layerId, rdd, ZCurveKeyIndexMethod)
       case ("SpatialKey", "MultibandTile") =>
-        val rdd = flr.read[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](layerId)
-        val rdd1 = ContextRDD(sc.parallelize(rdd.take(1)), rdd.metadata)
-        gwlw.write(layerId, rdd1, ZCurveKeyIndexMethod)
+        val rdd = layerReader.read[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](layerId)
+        layerWriter.write(layerId, rdd, ZCurveKeyIndexMethod)
       case ("SpaceTimeKey", "Tile") =>
-        val rdd = flr.read[SpaceTimeKey, Tile, TileLayerMetadata[SpaceTimeKey]](layerId)
+        val rdd = layerReader.read[SpaceTimeKey, Tile, TileLayerMetadata[SpaceTimeKey]](layerId)
         val time = rdd.first._1.time
-        val rdd2 = rdd.toSpatial(time)
-        val rdd1 = ContextRDD(sc.parallelize(rdd2.take(1)), rdd2.metadata.asInstanceOf[TileLayerMetadata[SpatialKey]])
-        gwlw.write(layerId, rdd1, ZCurveKeyIndexMethod)
+        val rdd1 = rdd.toSpatial(time)
+        val rdd2 = ContextRDD(rdd1, rdd1.metadata.asInstanceOf[TileLayerMetadata[SpatialKey]])
+        layerWriter.write(layerId, rdd2, ZCurveKeyIndexMethod)
       case ("SpaceTimeKey", "MultibandTile") =>
-        val rdd = flr.read[SpaceTimeKey, MultibandTile, TileLayerMetadata[SpaceTimeKey]](layerId)
+        val rdd = layerReader.read[SpaceTimeKey, MultibandTile, TileLayerMetadata[SpaceTimeKey]](layerId)
         val time = rdd.first._1.time
-        val rdd2 = rdd.toSpatial(time)
-        val rdd1 = ContextRDD(sc.parallelize(rdd2.take(args(9).toInt)), rdd2.metadata.asInstanceOf[TileLayerMetadata[SpatialKey]])
-        gwlw.write(layerId, rdd1, ZCurveKeyIndexMethod)
+        val rdd1 = rdd.toSpatial(time)
+        val rdd2 = ContextRDD(rdd1, rdd1.metadata.asInstanceOf[TileLayerMetadata[SpatialKey]])
+        layerWriter.write(layerId, rdd2, ZCurveKeyIndexMethod)
       case _ => throw new Exception
     }
   }
