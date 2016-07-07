@@ -165,12 +165,12 @@ object RasterDisgorge {
     val layerName = "coverageName"
     val catalog = new GeowaveLayerReader(attributeStore)
     val polygon = Polygon(List(
-      // Latitude, Longitude
-      Point(32.6953125, 43.9453125),
-      Point(32.6953125, 45.0),
-      Point(33.75, 45.0),
-      Point(33.75, 43.9453125),
-      Point(32.6953125, 43.9453125)))
+      // Longitude, Latitude
+      Point(43.9453125, 32.6953125),
+      Point(45.0, 32.6953125),
+      Point(45.0, 33.75),
+      Point(43.9453125, 33.75),
+      Point(43.9453125, 32.6953125)))
 
     println("---------------------------------")
     val rdd = catalog
@@ -181,6 +181,7 @@ object RasterDisgorge {
     println(s"METADATA=${rdd.metadata}")
     rdd.collect.foreach({ case (k, v) =>
       val extent = mt(k)
+      println(s"EXTENT=$extent")
       val pr = ProjectedRaster(Raster(v, extent), LatLng)
       val gc = pr.toGridCoverage2D
       val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/geotrellis-${System.currentTimeMillis}.tif"))
@@ -191,20 +192,20 @@ object RasterDisgorge {
 
 
     println("---------------------------------")
-    catalog
+    val rdd1 = catalog
       .query[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](LayerId(layerName, 10))
-      .where(Intersects(Point(32.701, 44.7499).envelope) or Intersects(Point(33.399, 44.301).envelope))
+      .where(Intersects(Point(44.99, 32.701).envelope) or Intersects(Point(43.946, 33.749).envelope))
       .result
-      .collect
-      .foreach({ case (k, v) => println(s"$k $v") })
+    println(s"METADATA=${rdd1.metadata}")
+    rdd1.collect.foreach({ case (k, v) => println(s"$k $v") })
 
     println("---------------------------------")
-    catalog
+    val rdd2 = catalog
       .query[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](LayerId(layerName, 14))
-      .where(Intersects(Point(32.701, 44.7499).envelope) or Intersects(Point(33.399, 44.301).envelope))
+      .where(Intersects(Point(44.695, 33.017).envelope) or Intersects(Point(44.097, 33.615).envelope))
       .result
-      .collect
-      .foreach({ case (k, v) => println(s"$k $v") })
+    println(s"METADATA=${rdd2.metadata}")
+    rdd2.collect.foreach({ case (k, v) => println(s"$k $v") })
   }
 
 }
