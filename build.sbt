@@ -64,8 +64,3 @@ lazy val rasterPeek = (project in file("raster-peek"))
   .dependsOn(root)
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
-
-lazy val vector = (project in file("vector"))
-  .dependsOn(root)
-  .settings(commonSettings: _*)
-  .settings(resolvers ++= extraResolvers)
