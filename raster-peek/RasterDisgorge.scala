@@ -1,4 +1,4 @@
-package com.example.raster
+package com.daystrom_data_concepts.raster
 
 import geotrellis.geotools._
 import geotrellis.proj4.LatLng
@@ -80,7 +80,7 @@ object RasterDisgorge {
     */
   def peek(bo: BasicAccumuloOperations, aro: AccumuloRequiredOptions, sc: SparkContext): Unit = {
     /* Construct query */
-    val index = (new SpatialDimensionalityTypeProvider.SpatialIndexBuilder).setAllTiers(true).createIndex()
+    val index = (new SpatialDimensionalityTypeProvider.SpatialIndexBuilder).createIndex()
     val ds = new AccumuloDataStore(bo)
     val adapter = {
       val as = new AccumuloAdapterStore(bo).getAdapters
