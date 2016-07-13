@@ -1,5 +1,7 @@
 package com.daystrom_data_concepts.raster
 
+import geotrellis.geotools._
+import geotrellis.proj4.LatLng
 import geotrellis.raster._
 import geotrellis.spark._
 import geotrellis.spark.io._
@@ -8,9 +10,11 @@ import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.index._
 import geotrellis.spark.io.s3._
 
+import org.apache.log4j.Logger
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
-import org.apache.log4j.Logger
+import org.geotools.gce.geotiff._
+import org.opengis.parameter.GeneralParameterValue
 
 
 object Demo {
@@ -76,12 +80,12 @@ object Demo {
     val rdd1 = ContextRDD(
       rdd0.map({case (key, tile) =>
         val newTile = UByteArrayTile.empty(tile.cols, tile.rows)
-        val r = scala.util.Random
+        // val r = scala.util.Random
 
         var i = 0; while (i < tile.cols) {
           var j = 0; while (j < tile.rows) {
-            // newTile.set(i, j, p(tile.getDouble(i, j)))
-            newTile.set(i, j, r.nextInt(256))
+            newTile.set(i, j, p(tile.getDouble(i, j)))
+            // newTile.set(i, j, r.nextInt(256))
             j += 1
           }
           i += 1
@@ -100,6 +104,17 @@ object Demo {
 
     /* Write RDD into GeoWave */
     layerWriter.write(gwLayerId, rdd1, ZCurveKeyIndexMethod)
+
+    /* Read RDD from GeoWave */
+    val gwLayerReader = new GeowaveLayerReader(gwAttributeStore)
+    val rdd2 = gwLayerReader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](gwLayerId)
+    rdd2.collect.foreach({ case (k, v) =>
+      val extent = rdd2.metadata.mapTransform(k)
+      val pr = ProjectedRaster(Raster(v, extent), LatLng)
+      val gc = pr.toGridCoverage2D
+      val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/geotrellis-${System.currentTimeMillis}.tif"))
+      writer.write(gc, Array.empty[GeneralParameterValue])
+    })
   }
 
 }
