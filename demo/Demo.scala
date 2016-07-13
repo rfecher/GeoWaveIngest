@@ -107,12 +107,12 @@ object Demo {
 
     /* Read RDD from GeoWave */
     val gwLayerReader = new GeowaveLayerReader(gwAttributeStore)
-    val rdd2 = gwLayerReader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](gwLayerId)
+    val rdd2 = gwLayerReader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId("ned", args(5).toInt))
     rdd2.collect.foreach({ case (k, v) =>
       val extent = rdd2.metadata.mapTransform(k)
       val pr = ProjectedRaster(Raster(v, extent), LatLng)
       val gc = pr.toGridCoverage2D
-      val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/geotrellis-${System.currentTimeMillis}.tif"))
+      val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/${gwLayerId.name}/${gwLayerId.zoom}/${System.currentTimeMillis}.tif"))
       writer.write(gc, Array.empty[GeneralParameterValue])
     })
   }
