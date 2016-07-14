@@ -30,8 +30,8 @@ object Demo {
   def main(args: Array[String]) : Unit = {
 
     /* Command line arguments */
-    if (args.length < 6) {
-      logger.error("Invalid arguments, expected: <zookeepers> <accumuloInstance> <accumuloUser> <accumuloPass> <geowaveNamespace> <ZoomLevel>");
+    if (args.length < 7) {
+      logger.error("Invalid arguments, expected: <zookeepers> <accumuloInstance> <accumuloUser> <accumuloPass> <geowaveNamespace> <layerName> <zoomLevel>");
       System.exit(-1)
     }
 
@@ -49,12 +49,12 @@ object Demo {
 
     val gwAttributeStore = new GeowaveAttributeStore(zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace)
     val layerWriter = new GeowaveLayerWriter(gwAttributeStore)
-    val gwLayerId = LayerId("ned", 0)
+    val gwLayerId = LayerId(args(5), args(6).toInt)
 
     val rdd0 = {
       val s3AttributeStore = S3AttributeStore("osm-elevation", "catalog")
       val s3LayerReader = S3LayerReader(s3AttributeStore)
-      val inLayerId = LayerId("ned", args(5).toInt)
+      val inLayerId = LayerId(args(5), args(6).toInt)
 
       if (HadoopAttributeStore(CACHE_DIR).layerExists(inLayerId)) {
         println(s"Found cached layer ${CACHE_DIR}:${inLayerId}.")
