@@ -80,12 +80,10 @@ object Demo {
     val rdd1 = ContextRDD(
       rdd0.map({case (key, tile) =>
         val newTile = UByteArrayTile.empty(tile.cols, tile.rows)
-        // val r = scala.util.Random
 
         var i = 0; while (i < tile.cols) {
           var j = 0; while (j < tile.rows) {
             newTile.set(i, j, p(tile.getDouble(i, j)))
-            // newTile.set(i, j, r.nextInt(256))
             j += 1
           }
           i += 1
