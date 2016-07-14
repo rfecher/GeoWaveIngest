@@ -102,6 +102,20 @@ object Demo {
 
     /* Write RDD into GeoWave */
     layerWriter.write(gwLayerId, rdd1, ZCurveKeyIndexMethod)
+
+    /* Read RDD out of GeoWave */
+    val gwLayerReader = new GeowaveLayerReader(gwAttributeStore)
+    val rdd2 = gwLayerReader
+      .query[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](LayerId(args(5), 10))
+      .where(Intersects(rdd1.metadata.extent))
+      .result
+    rdd2.collect.foreach({ case (k, v) =>
+      val extent = rdd2.metadata.mapTransform(k)
+      val pr = ProjectedRaster(Raster(v, extent), LatLng)
+      val gc = pr.toGridCoverage2D
+      val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/${args(5)}/${System.currentTimeMillis}.tif"))
+      writer.write(gc, Array.empty[GeneralParameterValue])
+    })
   }
 
 }
