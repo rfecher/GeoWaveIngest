@@ -79,7 +79,7 @@ object Demo {
     println(s"LAYERS=${gwAttributeStore.layerIds}\n")
     val rdd1 = ContextRDD(
       rdd0.map({case (key, tile) =>
-        val newTile = UByteArrayTile.empty(tile.cols, tile.rows)
+        val newTile = UByteArrayTile.empty(tile.cols, tile.rows, UByteUserDefinedNoDataCellType(0))
 
         var i = 0; while (i < tile.cols) {
           var j = 0; while (j < tile.rows) {
@@ -89,7 +89,7 @@ object Demo {
           i += 1
         }
 
-        (key, newTile)
+        (key, ArrayMultibandTile(newTile, newTile, newTile).asInstanceOf[MultibandTile])
       }),
       TileLayerMetadata(
         UByteConstantNoDataCellType,
@@ -116,6 +116,8 @@ object Demo {
       val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/${args(5)}/${System.currentTimeMillis}.tif"))
       writer.write(gc, Array.empty[GeneralParameterValue])
     })
+
+    println("done")
   }
 
 }
