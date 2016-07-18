@@ -1,4 +1,4 @@
-package com.example.raster
+package com.daystrom_data_concepts.raster
 
 import com.vividsolutions.jts.geom._
 import mil.nga.giat.geowave.adapter.raster.adapter.RasterDataAdapter
@@ -51,7 +51,7 @@ object RasterIngest {
     val coverageName = "coverageName" // This must not be empty
     val metadata = new java.util.HashMap[String, String](); metadata.put("cellType", "uint8raw")
     val dataStore = new AccumuloDataStore(bo)
-    val index = (new SpatialDimensionalityTypeProvider.SpatialIndexBuilder).setAllTiers(true).createIndex()
+    val index = (new SpatialDimensionalityTypeProvider.SpatialIndexBuilder).createIndex()
     val adapter = new RasterDataAdapter(coverageName, metadata, img, 256, true) // img only used for metadata, not data
     val indexWriter = dataStore.createWriter(adapter, index).asInstanceOf[IndexWriter[GridCoverage]]
 

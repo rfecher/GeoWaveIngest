@@ -55,17 +55,12 @@ lazy val rasterPoke = (project in file("raster-poke"))
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
 
-lazy val superPoke = (project in file("super-poke"))
-  .dependsOn(root)
-  .settings(commonSettings: _*)
-  .settings(resolvers ++= extraResolvers)
-
 lazy val rasterPeek = (project in file("raster-peek"))
   .dependsOn(root)
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
 
-lazy val vector = (project in file("vector"))
+lazy val demo = (project in file("demo"))
   .dependsOn(root)
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
