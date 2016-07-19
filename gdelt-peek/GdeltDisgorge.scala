@@ -1,6 +1,9 @@
 package com.daystrom_data_concepts.gdelt
 
 import geotrellis.geotools._
+import geotrellis.raster.TileLayout
+import geotrellis.spark.join.VectorJoin
+import geotrellis.spark.tiling.LayoutDefinition
 import geotrellis.vector._
 
 import mil.nga.giat.geowave.adapter.vector.FeatureDataAdapter
@@ -20,10 +23,17 @@ import org.geotools.feature.simple._
 import org.opengis.feature.simple._
 
 
+/**
+  * Requires a locally-published version of [1] which is based on [2]
+  * (the former is just the latter rebased on top of 536ccd9).
+  *
+  * 1. https://github.com/jamesmcclain/geotrellis/tree/feature/vector-join
+  * 2. https://github.com/geotrellis/geotrellis/pull/1555
+  */
 object GdeltDisgorge {
 
   val log = Logger.getLogger(GdeltDisgorge.getClass)
-  val ε = 0.33
+  val ε = 0.5
 
   def getAccumuloOperationsInstance(
     zookeepers: String,
@@ -74,27 +84,41 @@ object GdeltDisgorge {
     // GeoWaveInputFormat.setQuery(config, new SpatialQuery(utah))
     GeoWaveInputFormat.setQueryOptions(config, new QueryOptions(adapter, customIndex))
 
-    val rdd = sparkContext.newAPIHadoopRDD(config,
+    val _rdd = sparkContext.newAPIHadoopRDD(config,
       classOf[GeoWaveInputFormat[SimpleFeature]],
       classOf[GeoWaveInputKey],
       classOf[SimpleFeature])
       .map({ case (_, simpleFeature) => simpleFeature.toFeature[Point] })
+    val rdd = sparkContext.parallelize(_rdd.take(1<<5))
 
     val bufferedRdd = rdd.map({ feature =>
       val point: Point = feature.geom
       val x = point.x
       val y = point.y
       val poly = Polygon(
-        Point(x-ε,x-ε),
-        Point(x+ε,x-ε),
-        Point(x+ε,x+ε),
-        Point(x-ε,x+ε),
-        Point(x-ε,x-ε)
+        Point(x-ε,y-ε),
+        Point(x+ε,y-ε),
+        Point(x+ε,y+ε),
+        Point(x-ε,y+ε),
+        Point(x-ε,y-ε)
       )
       val data = feature.data
+
       Feature(poly, data)
     })
 
+    val extent = Extent(-180, -90, 180, 90)
+    val tileLayout = TileLayout(1000, 1000, 256, 256)
+    val layoutDefinition = LayoutDefinition(extent, tileLayout)
+
+    val joinedRdd = VectorJoin(rdd, bufferedRdd, layoutDefinition, { (l, r) => l.intersects(r) })
+
+    joinedRdd
+      .foreach({ case(l,r) =>
+        println(s"LEFT=$l")
+        println(s"RIGHT=$r")
+        println
+      })
   }
 
 }
