@@ -58,6 +58,7 @@ object GdeltDisgorge {
 
     val sparkConf = new SparkConf().setAppName("GeoWaveInputFormat")
     val sparkContext = new SparkContext(sparkConf)
+    implicit val sc = sparkContext
 
     val job = Job.getInstance(sparkContext.hadoopConfiguration)
     val config = job.getConfiguration
@@ -111,14 +112,18 @@ object GdeltDisgorge {
     val tileLayout = TileLayout(1000, 1000, 256, 256)
     val layoutDefinition = LayoutDefinition(extent, tileLayout)
 
-    val joinedRdd = VectorJoin(rdd, bufferedRdd, layoutDefinition, { (l, r) => l.intersects(r) })
+    val joinedRdd1 = VectorJoin(rdd, bufferedRdd, layoutDefinition, { (l, r) => l.intersects(r) })
+    val joinedRdd2 = VectorJoin(rdd, bufferedRdd, { (l, r) => l.intersects(r) })
 
-    joinedRdd
+    joinedRdd2
+      .collect
       .foreach({ case(l,r) =>
         println(s"LEFT=$l")
         println(s"RIGHT=$r")
         println
       })
+
+    println(s"${joinedRdd1.count} and ${joinedRdd2.count}")
   }
 
 }
