@@ -1,11 +1,15 @@
 package com.daystrom_data_concepts.gdelt
 
+import geotrellis.geotools._
+import geotrellis.vector._
+
 import mil.nga.giat.geowave.adapter.vector.FeatureDataAdapter
 import mil.nga.giat.geowave.core.geotime.ingest._
 import mil.nga.giat.geowave.core.store.operations.remote.options.DataStorePluginOptions
 import mil.nga.giat.geowave.core.store.query.QueryOptions
 import mil.nga.giat.geowave.datastore.accumulo._
 import mil.nga.giat.geowave.datastore.accumulo.operations.config.AccumuloRequiredOptions
+import mil.nga.giat.geowave.format.gdelt.GDELTUtils
 import mil.nga.giat.geowave.mapreduce.input.{GeoWaveInputKey, GeoWaveInputFormat}
 import org.apache.hadoop.mapreduce.Job
 import org.apache.log4j.Logger
@@ -61,7 +65,7 @@ object GdeltDisgorge {
     }
 
     val basicOperations = getAccumuloOperationsInstance(args(0), args(1), args(2), args(3), args(4))
-    val adapter = new FeatureDataAdapter(Gdelt.createGdeltFeatureType)
+    val adapter = new FeatureDataAdapter(GDELTUtils.createGDELTEventDataType(true))
     val customIndex = (new SpatialDimensionalityTypeProvider).createPrimaryIndex
 
     GeoWaveInputFormat.setDataStoreName(config, "accumulo")
@@ -73,7 +77,10 @@ object GdeltDisgorge {
       classOf[GeoWaveInputFormat[SimpleFeature]],
       classOf[GeoWaveInputKey],
       classOf[SimpleFeature])
-      .take(1)
+      .map({ case (_, simpleFeature) =>
+        simpleFeature.toFeature[Point]
+      })
+      .take(33)
 
     println(array.toList)
   }
