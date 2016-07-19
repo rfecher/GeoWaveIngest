@@ -23,6 +23,7 @@ import org.opengis.feature.simple._
 object GdeltDisgorge {
 
   val log = Logger.getLogger(GdeltDisgorge.getClass)
+  val ε = 0.33
 
   def getAccumuloOperationsInstance(
     zookeepers: String,
@@ -73,16 +74,27 @@ object GdeltDisgorge {
     // GeoWaveInputFormat.setQuery(config, new SpatialQuery(utah))
     GeoWaveInputFormat.setQueryOptions(config, new QueryOptions(adapter, customIndex))
 
-    val array = sparkContext.newAPIHadoopRDD(config,
+    val rdd = sparkContext.newAPIHadoopRDD(config,
       classOf[GeoWaveInputFormat[SimpleFeature]],
       classOf[GeoWaveInputKey],
       classOf[SimpleFeature])
-      .map({ case (_, simpleFeature) =>
-        simpleFeature.toFeature[Point]
-      })
-      .take(33)
+      .map({ case (_, simpleFeature) => simpleFeature.toFeature[Point] })
 
-    println(array.toList)
+    val bufferedRdd = rdd.map({ feature =>
+      val point: Point = feature.geom
+      val x = point.x
+      val y = point.y
+      val poly = Polygon(
+        Point(x-ε,x-ε),
+        Point(x+ε,x-ε),
+        Point(x+ε,x+ε),
+        Point(x-ε,x+ε),
+        Point(x-ε,x-ε)
+      )
+      val data = feature.data
+      Feature(poly, data)
+    })
+
   }
 
 }
