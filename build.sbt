@@ -64,3 +64,8 @@ lazy val demo = (project in file("demo"))
   .dependsOn(root)
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
+
+lazy val gdeltPeek = (project in file("gdelt-peek"))
+  .dependsOn(root)
+  .settings(commonSettings: _*)
+  .settings(resolvers ++= extraResolvers)
