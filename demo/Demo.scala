@@ -9,6 +9,7 @@ import geotrellis.spark.io.geowave._
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.index._
 import geotrellis.spark.io.s3._
+import geotrellis.vector.Extent
 
 import org.apache.log4j.Logger
 import org.apache.spark.SparkConf
@@ -40,33 +41,40 @@ object Demo {
     val sparkContext = new SparkContext(sparkConf)
     implicit val sc = sparkContext
 
-    /* Assign arguments to variables with meaningful names */
+    /* Give arguments meaningful names */
     val zookeepers = args(0)
     val accumuloInstance = args(1)
     val accumuloUser = args(2)
     val accumuloPass = args(3)
     val geowaveNamespace = args(4)
+    val layerName = args(5)
+    val zoomLevel = args(6)
 
     val gwAttributeStore = new GeowaveAttributeStore(zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace)
     val layerWriter = new GeowaveLayerWriter(gwAttributeStore)
-    val gwLayerId = LayerId(args(5), args(6).toInt)
+    val gwLayerId = LayerId(layerName, zoomLevel.toInt)
 
     val rdd0 = {
       val s3AttributeStore = S3AttributeStore("osm-elevation", "catalog")
       val s3LayerReader = S3LayerReader(s3AttributeStore)
       val inLayerId = LayerId(args(5), args(6).toInt)
+      val subset = Extent(-87.1875, 34.43409789359469, -78.15673828125, 39.87601941962116)
 
       if (HadoopAttributeStore(CACHE_DIR).layerExists(inLayerId)) {
         println(s"Found cached layer ${CACHE_DIR}:${inLayerId}.")
-        val hadoopLayerReader = HadoopLayerReader(CACHE_DIR)
-        hadoopLayerReader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
+        HadoopLayerReader(CACHE_DIR)
+          .query[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
+          .where(Intersects(subset))
+          .result
       }
       else {
         println(s"Could not find cached layer ${CACHE_DIR}:${inLayerId}, pulling from S3 and creating.")
         val rdd = s3LayerReader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
-        val hadoopLayerWriter = HadoopLayerWriter(CACHE_DIR)
-        hadoopLayerWriter.write(inLayerId, rdd, ZCurveKeyIndexMethod)
-        rdd
+        HadoopLayerWriter(CACHE_DIR).write(inLayerId, rdd, ZCurveKeyIndexMethod)
+        HadoopLayerReader(CACHE_DIR)
+          .query[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
+          .where(Intersects(subset))
+          .result
       }
     }
 
@@ -103,19 +111,19 @@ object Demo {
     /* Write RDD into GeoWave */
     layerWriter.write(gwLayerId, rdd1, ZCurveKeyIndexMethod)
 
-    /* Read RDD out of GeoWave */
-    val gwLayerReader = new GeowaveLayerReader(gwAttributeStore)
-    val rdd2 = gwLayerReader
-      .query[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](LayerId(args(5), 10))
-      .where(Intersects(rdd1.metadata.extent))
-      .result
-    rdd2.collect.foreach({ case (k, v) =>
-      val extent = rdd2.metadata.mapTransform(k)
-      val pr = ProjectedRaster(Raster(v, extent), LatLng)
-      val gc = pr.toGridCoverage2D
-      val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/${args(5)}/${System.currentTimeMillis}.tif"))
-      writer.write(gc, Array.empty[GeneralParameterValue])
-    })
+    // /* Read RDD out of GeoWave */
+    // val gwLayerReader = new GeowaveLayerReader(gwAttributeStore)
+    // val rdd2 = gwLayerReader
+    //   .query[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](LayerId(args(5), 10))
+    //   .where(Intersects(rdd1.metadata.extent))
+    //   .result
+    // rdd2.collect.foreach({ case (k, v) =>
+    //   val extent = rdd2.metadata.mapTransform(k)
+    //   val pr = ProjectedRaster(Raster(v, extent), LatLng)
+    //   val gc = pr.toGridCoverage2D
+    //   val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/${args(5)}/${System.currentTimeMillis}.tif"))
+    //   writer.write(gc, Array.empty[GeneralParameterValue])
+    // })
 
     println("done")
   }
