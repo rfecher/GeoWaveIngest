@@ -9,7 +9,6 @@ val generalDeps = Seq(
 
 val extraResolvers = Seq(
   "osgeo" at "http://download.osgeo.org/webdav/geotools/",
-  "LOCAL" at "file://" + Path.userHome.absolutePath + "/Desktop/repository",
   "geowave" at "http://geowave-maven.s3-website-us-east-1.amazonaws.com/snapshot"
 )
 

@@ -1,7 +1,6 @@
 package com.daystrom_data_concepts.raster
 
 import geotrellis.geotools._
-import geotrellis.proj4.LatLng
 import geotrellis.raster._
 import geotrellis.spark._
 import geotrellis.spark.io._
@@ -10,12 +9,13 @@ import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.index._
 import geotrellis.spark.io.s3._
 import geotrellis.vector.Extent
-
 import org.apache.log4j.Logger
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.geotools.gce.geotiff._
-import org.opengis.parameter.GeneralParameterValue
+import geotrellis.spark.io.index.ZCurveKeyIndexMethod.spatialKeyIndexMethod
+import geotrellis.spark.io.accumulo.HdfsWriteStrategy
+import geotrellis.spark.io.accumulo.SocketWriteStrategy
 
 
 object Demo {
@@ -35,7 +35,7 @@ object Demo {
       logger.error("Invalid arguments, expected: <zookeepers> <accumuloInstance> <accumuloUser> <accumuloPass> <geowaveNamespace> <layerName> <zoomLevel>");
       System.exit(-1)
     }
-
+    
     /* Spark context */
     val sparkConf = new SparkConf().setAppName("GeoTrellis+GeoWave Demo")
     val sparkContext = new SparkContext(sparkConf)
@@ -51,7 +51,7 @@ object Demo {
     val zoomLevel = args(6)
 
     val gwAttributeStore = new GeowaveAttributeStore(zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace)
-    val layerWriter = new GeowaveLayerWriter(gwAttributeStore)
+    val layerWriter = new GeowaveLayerWriter(gwAttributeStore, if(args.length > 7) HdfsWriteStrategy(args(7)) else SocketWriteStrategy())
     val gwLayerId = LayerId(layerName, zoomLevel.toInt)
 
     val rdd0 = {
@@ -96,7 +96,7 @@ object Demo {
           }
           i += 1
         }
-
+        //3 band data using 1 band?
         (key, ArrayMultibandTile(newTile, newTile, newTile).asInstanceOf[MultibandTile])
       }),
       TileLayerMetadata(
