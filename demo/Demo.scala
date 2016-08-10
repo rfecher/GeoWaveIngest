@@ -5,6 +5,7 @@ import geotrellis.proj4.LatLng
 import geotrellis.raster._
 import geotrellis.spark._
 import geotrellis.spark.io._
+import geotrellis.spark.io.accumulo.SocketWriteStrategy
 import geotrellis.spark.io.geowave._
 import geotrellis.spark.io.hadoop._
 import geotrellis.spark.io.index._
@@ -51,7 +52,7 @@ object Demo {
     val zoomLevel = args(6)
 
     val gwAttributeStore = new GeowaveAttributeStore(zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace)
-    val layerWriter = new GeowaveLayerWriter(gwAttributeStore)
+    val layerWriter = new GeowaveLayerWriter(gwAttributeStore, SocketWriteStrategy())
     val gwLayerId = LayerId(layerName, zoomLevel.toInt)
 
     val rdd0 = {
