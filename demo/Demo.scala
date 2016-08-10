@@ -3,6 +3,7 @@ package com.daystrom_data_concepts.raster
 import geotrellis.geotools._
 import geotrellis.proj4.LatLng
 import geotrellis.raster._
+import geotrellis.raster.mapalgebra.focal.hillshade._
 import geotrellis.spark._
 import geotrellis.spark.io._
 import geotrellis.spark.io.accumulo.SocketWriteStrategy
@@ -13,6 +14,7 @@ import geotrellis.spark.io.s3._
 import geotrellis.vector.Extent
 
 import org.apache.log4j.Logger
+import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.geotools.gce.geotiff._
@@ -24,16 +26,53 @@ object Demo {
   val logger = Logger.getLogger(Demo.getClass)
   val CACHE_DIR = "/tmp/catalog-cache"
 
+  /**
+    * Project a value (from some raw raster) into a viewable range
+    * by use of a list of quantiles.
+    */
   def projection(quantiles: Array[Double])(x: Double): Int = {
     val i = java.util.Arrays.binarySearch(quantiles, x)
     if (i < 0) ((-1 * i) - 1); else i
+  }
+
+  /**
+    * Project all of the values of the pixel values of a key+tile RDD
+    * into a viewable range.
+    */
+  def viewable(rdd: RDD[(SpatialKey, Tile)] with Metadata[TileLayerMetadata[SpatialKey]]) = {
+    val histogram = rdd.histogram(512)
+    val breaks = histogram.quantileBreaks(256)
+    val p = projection(breaks)(_)
+
+    ContextRDD(
+      rdd.map({case (key, tile) =>
+        val newTile = UByteArrayTile.empty(tile.cols, tile.rows, UByteUserDefinedNoDataCellType(0))
+
+        var i = 0; while (i < tile.cols) {
+          var j = 0; while (j < tile.rows) {
+            newTile.set(i, j, p(tile.getDouble(i, j)))
+            j += 1
+          }
+          i += 1
+        }
+
+        (key, newTile.asInstanceOf[Tile])
+      }),
+      TileLayerMetadata(
+        UByteConstantNoDataCellType,
+        rdd.metadata.layout,
+        rdd.metadata.extent,
+        rdd.metadata.crs,
+        rdd.metadata.bounds
+      )
+    )
   }
 
   def main(args: Array[String]) : Unit = {
 
     /* Command line arguments */
     if (args.length < 7) {
-      logger.error("Invalid arguments, expected: <zookeepers> <accumuloInstance> <accumuloUser> <accumuloPass> <geowaveNamespace> <layerName> <zoomLevel>");
+      logger.error("Invalid arguments, expected: <zookeepers> <accumuloInstance> <accumuloUser> <accumuloPass> <gwNamespace> <layerName> <zoomLevel>")
       System.exit(-1)
     }
 
@@ -49,84 +88,40 @@ object Demo {
     val accumuloPass = args(3)
     val geowaveNamespace = args(4)
     val layerName = args(5)
-    val zoomLevel = args(6)
+    val zoomLevel = args(6).toInt
 
     val gwAttributeStore = new GeowaveAttributeStore(zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace)
     val layerWriter = new GeowaveLayerWriter(gwAttributeStore, SocketWriteStrategy())
-    val gwLayerId = LayerId(layerName, zoomLevel.toInt)
+    val layerReader = new GeowaveLayerReader(gwAttributeStore)
 
-    val rdd0 = {
-      val s3AttributeStore = S3AttributeStore("osm-elevation", "catalog")
-      val s3LayerReader = S3LayerReader(s3AttributeStore)
-      val inLayerId = LayerId(args(5), args(6).toInt)
+    /* Read a starting layer */
+    val rdd1 = {
+      val inLayerId = LayerId(layerName, zoomLevel)
       val subset = Extent(-87.1875, 34.43409789359469, -78.15673828125, 39.87601941962116)
 
-      if (HadoopAttributeStore(CACHE_DIR).layerExists(inLayerId)) {
-        println(s"Found cached layer ${CACHE_DIR}:${inLayerId}.")
-        HadoopLayerReader(CACHE_DIR)
-          .query[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
-          .where(Intersects(subset))
-          .result
-      }
-      else {
-        println(s"Could not find cached layer ${CACHE_DIR}:${inLayerId}, pulling from S3 and creating.")
-        val rdd = s3LayerReader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
-        HadoopLayerWriter(CACHE_DIR).write(inLayerId, rdd, ZCurveKeyIndexMethod)
-        HadoopLayerReader(CACHE_DIR)
-          .query[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
-          .where(Intersects(subset))
-          .result
-      }
+      require(HadoopAttributeStore(CACHE_DIR).layerExists(inLayerId))
+      HadoopLayerReader(CACHE_DIR)
+        // .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
+        .query[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
+        .where(Intersects(subset))
+        .result
     }
 
-    /* Produce viewable elevation layer. */
-    val histogram = rdd0.histogram(512)
-    val breaks = histogram.quantileBreaks(256)
-    val p = projection(breaks)(_)
-    println(s"METADATA=${rdd0.metadata}\n")
-    println(s"QUANTILES=${breaks.toList}\n")
-    println(s"LAYERS=${gwAttributeStore.layerIds}\n")
-    val rdd1 = ContextRDD(
-      rdd0.map({case (key, tile) =>
-        val newTile = UByteArrayTile.empty(tile.cols, tile.rows, UByteUserDefinedNoDataCellType(0))
+    layerWriter.write(LayerId(layerName + "-raw", 11), rdd1)
+    layerWriter.write(LayerId(layerName + "-viewable", 11), viewable(rdd1))
 
-        var i = 0; while (i < tile.cols) {
-          var j = 0; while (j < tile.rows) {
-            newTile.set(i, j, p(tile.getDouble(i, j)))
-            j += 1
-          }
-          i += 1
-        }
+    val rdd2 = layerReader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(layerName + "-raw", 11))
 
-        (key, ArrayMultibandTile(newTile, newTile, newTile).asInstanceOf[MultibandTile])
-      }),
-      TileLayerMetadata(
-        UByteConstantNoDataCellType,
-        rdd0.metadata.layout,
-        rdd0.metadata.extent,
-        rdd0.metadata.crs,
-        rdd0.metadata.bounds
-      )
-    )
-
-    /* Write RDD into GeoWave */
-    layerWriter.write(gwLayerId, rdd1, ZCurveKeyIndexMethod)
-
-    // /* Read RDD out of GeoWave */
-    // val gwLayerReader = new GeowaveLayerReader(gwAttributeStore)
-    // val rdd2 = gwLayerReader
-    //   .query[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](LayerId(args(5), 10))
-    //   .where(Intersects(rdd1.metadata.extent))
-    //   .result
-    // rdd2.collect.foreach({ case (k, v) =>
-    //   val extent = rdd2.metadata.mapTransform(k)
+    // val mt = rdd2.metadata.mapTransform
+    // viewable(rdd2).collect.foreach({ case (k, v) =>
+    //   val extent = mt(k)
     //   val pr = ProjectedRaster(Raster(v, extent), LatLng)
     //   val gc = pr.toGridCoverage2D
-    //   val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/${args(5)}/${System.currentTimeMillis}.tif"))
+    //   val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/geotrellis-${System.currentTimeMillis}.tif"))
     //   writer.write(gc, Array.empty[GeneralParameterValue])
     // })
 
-    println("done")
+    layerWriter.write(LayerId(layerName + "-hillshade", 11), viewable(rdd2.hillshade()))
   }
 
 }
