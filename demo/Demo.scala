@@ -101,10 +101,10 @@ object Demo {
 
       require(HadoopAttributeStore(CACHE_DIR).layerExists(inLayerId))
       HadoopLayerReader(CACHE_DIR)
-        // .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
-        .query[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
-        .where(Intersects(subset))
-        .result
+        .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
+        // .query[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
+        // .where(Intersects(subset))
+        // .result
     }
 
     layerWriter.write(LayerId(layerName + "-raw", 11), rdd1)
