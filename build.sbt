@@ -19,6 +19,7 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.10.6",
   test in assembly := {},
   assemblyMergeStrategy in assembly := {
+    case "log4j.properties" => MergeStrategy.first
     case "reference.conf" => MergeStrategy.concat
     case "application.conf" => MergeStrategy.concat
     case PathList("META-INF", xs @ _*) =>

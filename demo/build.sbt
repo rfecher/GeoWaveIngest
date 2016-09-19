@@ -13,5 +13,7 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % Version.spark % "provided"
 )
 
+resourceDirectory in Compile := baseDirectory.value / "resources"
+
 fork in Test := false
 parallelExecution in Test := false

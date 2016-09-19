@@ -24,7 +24,6 @@ import org.opengis.parameter.GeneralParameterValue
 object Demo {
 
   val logger = Logger.getLogger(Demo.getClass)
-  val CACHE_DIR = "/tmp/catalog-cache"
 
   /**
     * Project a value (from some raw raster) into a viewable range
@@ -71,8 +70,8 @@ object Demo {
   def main(args: Array[String]) : Unit = {
 
     /* Command line arguments */
-    if (args.length < 7) {
-      logger.error("Invalid arguments, expected: <zookeepers> <accumuloInstance> <accumuloUser> <accumuloPass> <gwNamespace> <layerName> <zoomLevel>")
+    if (args.length < 8) {
+      logger.error("Invalid arguments, expected: <zookeepers> <accumuloInstance> <accumuloUser> <accumuloPass> <gwNamespace> <hdfsUri> <layerName> <zoomLevel>")
       System.exit(-1)
     }
 
@@ -87,14 +86,15 @@ object Demo {
     val accumuloUser = args(2)
     val accumuloPass = args(3)
     val geowaveNamespace = args(4)
-    val layerName = args(5)
-    val zoomLevel = args(6).toInt
+    val CACHE_DIR = args(5)
+    val layerName = args(6)
+    val zoomLevel = args(7).toInt
 
     val gwAttributeStore = new GeowaveAttributeStore(zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace)
     val layerWriter = new GeowaveLayerWriter(gwAttributeStore, SocketWriteStrategy())
     val layerReader = new GeowaveLayerReader(gwAttributeStore)
 
-    /* Read a starting layer */
+    logger.info("Reading starting layer from HDFS")
     val rdd1 = {
       val inLayerId = LayerId(layerName, zoomLevel)
       val subset = Extent(-87.1875, 34.43409789359469, -78.15673828125, 39.87601941962116)
@@ -107,10 +107,29 @@ object Demo {
         // .result
     }
 
-    layerWriter.write(LayerId(layerName + "-raw", 11), rdd1)
-    layerWriter.write(LayerId(layerName + "-viewable", 11), viewable(rdd1))
+    logger.info("Writing raw layer into GeoWave")
+    layerWriter.write(LayerId(layerName + "-raw", 0), rdd1)
 
-    val rdd2 = layerReader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(layerName + "-raw", 11))
+    logger.info("Writing viewable layer into GeoWave")
+    layerWriter.write(LayerId(layerName + "-viewable", 0), viewable(rdd1))
+
+    logger.info("Discovering tier of raw layer ...")
+    val tier =
+      (1 to 33)
+        .toIterator
+        .filter({ i =>
+          try {
+            (layerReader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(layerName + "-raw", i)).count > 0)
+          }
+          catch {
+            case _: Exception => false
+          }
+        })
+        .next
+    logger.info(s"Found raw layer at tier $tier")
+
+    logger.info("Reading raw layer from GeoWave")
+    val rdd2 = layerReader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(layerName + "-raw", tier))
 
     // val mt = rdd2.metadata.mapTransform
     // viewable(rdd2).collect.foreach({ case (k, v) =>
@@ -121,7 +140,10 @@ object Demo {
     //   writer.write(gc, Array.empty[GeneralParameterValue])
     // })
 
-    layerWriter.write(LayerId(layerName + "-hillshade", 11), viewable(rdd2.hillshade()))
+    logger.info("Writing viewable hillshade layer into GeoWave")
+    layerWriter.write(
+      LayerId(layerName + "-hillshade", tier), // Here, it is assumed that tier and precision coincide
+      viewable(rdd2.hillshade()))
   }
 
 }
