@@ -49,22 +49,7 @@ lazy val root = (project in file("."))
   .settings(commonSettings: _*)
   .settings(libraryDependencies ++= generalDeps)
 
-lazy val rasterPoke = (project in file("raster-poke"))
-  .dependsOn(root)
-  .settings(commonSettings: _*)
-  .settings(resolvers ++= extraResolvers)
-
-lazy val rasterPeek = (project in file("raster-peek"))
-  .dependsOn(root)
-  .settings(commonSettings: _*)
-  .settings(resolvers ++= extraResolvers)
-
 lazy val demo = (project in file("demo"))
-  .dependsOn(root)
-  .settings(commonSettings: _*)
-  .settings(resolvers ++= extraResolvers)
-
-lazy val gdeltPeek = (project in file("gdelt-peek"))
   .dependsOn(root)
   .settings(commonSettings: _*)
   .settings(resolvers ++= extraResolvers)
