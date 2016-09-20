@@ -29,7 +29,7 @@ done
 
 The raw data can be transformed into a GeoTrellis layer with a command similar to the following.
 ```bash
-$SPARK_HOME/bin/spark-submit \
+spark-submit \
     --master='local[*]' \
     --class com.azavea.datahub.etl.Ingest \
     --conf spark.executor.memory=8G \
@@ -42,28 +42,26 @@ $SPARK_HOME/bin/spark-submit \
 ```
 This should be modified with the appropriate input and output locations.
 
-## Building The Code ##
+## Building The Demo Code ##
 
 This demo requires the code found in the GeoTrellis [GeoWave subproject pull request](https://github.com/geotrellis/geotrellis/pull/1542).
 At time of writing, that pull request has not been merged.
 If that is the case at the time of reading, then that branch must be pulled down and published locally, otherwise an appropriate released or pre-release version of GeoTrellis can be used.
 
-`sbt` is also required.
+It is also required that `sbt` is installed.
 
 Given those dependencies, the code can be built by typing:
 ```bash
 sbt "project demo" assembly
 ```
 
-## Running The Code ##
+## Running The Demo Code ##
 
 ### Locally ###
 
-To run the demo comfortably one probably needs at least 32 GB of RAM.
+To run the demo comfortably, one probably needs at least 32 GB of RAM.
 
-The following instructions for running the demo locally make use of `docker`.
-
-The Accumulo and GeoServer containers can be started by typing the following:
+The Accumulo container can be started by typing the following:
 ```bash
 docker network create -d bridge geowave
 docker run -it --rm -p 50095:50095 --net=geowave --hostname leader --name leader jamesmcclain/geowave:8760ce2
@@ -75,17 +73,24 @@ docker run -it --rm --net=geowave -v $SPARK_HOME:/spark:ro -v $(pwd)/demo/target
 ```
 then running the demo ingest within that container
 ```bash
-/spark/bin/spark-submit --master='local[*]' --conf 'spark.driver.memory=32G' --class com.daystrom_data_concepts.raster.RasterDisgorge /jars/raster-peek-assembly-0.jar leader instance root password gwRaster
+/spark/bin/spark-submit \
+   --master='local[*]' \
+   --conf 'spark.driver.memory=32G' \
+   --class com.daystrom_data_concepts.raster.RasterDisgorge \
+   /jars/raster-peek-assembly-0.jar leader instance root password gwRaster
 ```
 
 To view the layers, start the GeoServer container:
 ```bash
 docker run -it --rm -p 8080:8080 --net=geowave jamesmcclain/geoserver:8760ce2
 ```
+and make use of the GeoWave raster plugin for GeoServer.
 
 Because of the size of the data, in all probability you will need to zoom in from the initial view before you will be able to see anything.
 Monitor the output from GeoServer to see whether errors are being raised and whether the rendering process is making progress (for wide views of the map, rendering may take some time).
-Once you have zoomed in enough, the errors in the GeoServer terminal will scroll away and you will begin to see encouraging messages.
+Once you have zoomed-in enough, the errors in the GeoServer terminal will scroll out of sight and you will begin to see encouraging messages.
+
+Here are some screenshots of the demo running locally:
 
 ![screenshot from 2016-09-16 23_19_59](https://cloud.githubusercontent.com/assets/11281373/18676982/7717a88c-7f25-11e6-8dd3-04c896a5842a.png)
 ![screenshot from 2016-09-16 23_25_20](https://cloud.githubusercontent.com/assets/11281373/18676981/7716cd7c-7f25-11e6-9d21-0c76ddb943dc.png)
@@ -131,18 +136,22 @@ If you are not using the pre-ingested data, perform the ingest using the Azavea 
 
 With the GeoTrellis layer in place, the demo ingest can now be run:
 ```bash
-spark-submit --master yarn --deploy-mode cluster --class com.daystrom_data_concepts.raster.Demo demo-assembly-0.jar ip-172-31-20-102 gis root secret geowave.gwRaster 'hdfs:/catalog-cache' ned 0
+spark-submit \
+   --master yarn \
+   --deploy-mode cluster \
+   --class com.daystrom_data_concepts.raster.Demo \
+   demo-assembly-0.jar ip-172-31-20-102 gis root secret geowave.gwRaster 'hdfs:/catalog-cache' ned 0
 ```
 Where the name of the zookeeper, `ip-172-31-20-102`, should be appropriately substituted.
 
 The ingest into GeoWave will probably take about 90 minutes.
 Once it is complete, you can now start GeoServer.
-Note that another copy of GeoServer is already running, but for whatever reason I have not had success using it for this purpose, so you I suggest that you start a different one using the command below.
+(Note that another copy of GeoServer is already running, but for whatever reason I have not had success using it for this purpose, so you I suggest that you start a different one using the command below.)
 
 ```bash
 docker run -it --rm -p 8086:8080 jamesmcclain/geoserver:8760ce2
 ```
-Once the GeoServer container is up, you will need to exec into it and add an appropriate GeoWave raster plugin configuration file.
+Once the GeoServer container is up, you will need to `exec` into it and add an appropriate configuration file for the GeoWave raster plugin:
 ```bash
 docker ps -a
 docker exec -it xyz_abc bash
@@ -160,6 +169,8 @@ In the shell inside of the container, create a file called `/tmp/layer2.xml` wit
 ```
 
 As before, the name of the zookeeper should be appropriately substituted.
+
+Please enjoy the following screenshots of the demo running on EMR:
 
 ![screenshot from 2016-09-19 18_59_48](https://cloud.githubusercontent.com/assets/11281373/18677072/aad0406c-7f25-11e6-8406-dcf809e1a0f2.png)
 
