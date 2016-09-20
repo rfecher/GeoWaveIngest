@@ -2,7 +2,7 @@ package com.daystrom_data_concepts.raster
 
 import com.vividsolutions.jts.geom._
 import mil.nga.giat.geowave.adapter.raster.adapter.RasterDataAdapter
-import mil.nga.giat.geowave.adapter.raster.query.IndexOnlySpatialQuery
+import mil.nga.giat.geowave.core.geotime.store.query.IndexOnlySpatialQuery
 import mil.nga.giat.geowave.core.geotime.ingest._
 import mil.nga.giat.geowave.core.index.HierarchicalNumericIndexStrategy
 import mil.nga.giat.geowave.core.index.HierarchicalNumericIndexStrategy.SubStrategy

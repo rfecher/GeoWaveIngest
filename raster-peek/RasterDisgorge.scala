@@ -10,7 +10,7 @@ import geotrellis.vector._
 
 import com.vividsolutions.jts.geom.{Envelope, GeometryFactory}
 import mil.nga.giat.geowave.adapter.raster.adapter.RasterDataAdapter
-import mil.nga.giat.geowave.adapter.raster.query.IndexOnlySpatialQuery
+import mil.nga.giat.geowave.core.geotime.store.query.IndexOnlySpatialQuery
 import mil.nga.giat.geowave.core.geotime.ingest._
 import mil.nga.giat.geowave.core.geotime.store.statistics.BoundingBoxDataStatistics
 import mil.nga.giat.geowave.core.index.ByteArrayId
@@ -132,7 +132,7 @@ object RasterDisgorge {
     */
   def main(args: Array[String]) : Unit = {
     if (args.length < 5) {
-      log.error("Invalid arguments, expected: zookeepers, accumuloInstance, accumuloUser, accumuloPass, geowaveNamespace");
+      log.error("Invalid arguments, expected: zookeepers, accumuloInstance, accumuloUser, accumuloPass, gwNamespace");
       System.exit(-1)
     }
 
