@@ -1,0 +1,15 @@
+{
+    "backend": {
+        "type": "hadoop",
+        "path": "file:///tmp/catalog-cache/"
+    },
+    "reprojectMethod": "buffered",
+    "pyramid": false,
+    "tileSize": 512,
+    "keyIndexMethod": {
+        "type": "zorder"
+    },
+    "resampleMethod": "bilinear",
+    "layoutScheme": "floating",
+    "crs": "EPSG:4326"
+}

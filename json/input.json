@@ -1,0 +1,9 @@
+[{
+    "format": "geotiff",
+    "name": "ned",
+    "cache": "NONE",
+    "backend": {
+        "type": "hadoop",
+        "path": "file:///tmp/NED"
+    }
+}]
