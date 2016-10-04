@@ -1,4 +1,4 @@
-package com.daystrom_data_concepts.raster
+package com.azavea.geotrellis.geowave
 
 import geotrellis.geotools._
 import geotrellis.proj4.LatLng
@@ -24,6 +24,21 @@ import org.opengis.parameter.GeneralParameterValue
 object Demo {
 
   val logger = Logger.getLogger(Demo.getClass)
+
+  /**
+    * Dump a layer to disk.
+    */
+  def dump(rdd: RDD[(SpatialKey, Tile)] with Metadata[TileLayerMetadata[SpatialKey]]) = {
+    val mt = rdd.metadata.mapTransform
+
+    rdd.collect.foreach({ case (k, v) =>
+      val extent = mt(k)
+      val pr = ProjectedRaster(Raster(v, extent), LatLng)
+      val gc = pr.toGridCoverage2D
+      val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/${System.currentTimeMillis}.tif"))
+      writer.write(gc, Array.empty[GeneralParameterValue])
+    })
+  }
 
   /**
     * Project a value (from some raw raster) into a viewable range
@@ -76,7 +91,10 @@ object Demo {
     }
 
     /* Spark context */
-    val sparkConf = new SparkConf().setAppName("GeoTrellis+GeoWave Demo")
+    val sparkConf = new SparkConf()
+      .setAppName("GeoTrellis+GeoWave Demo")
+      .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .set("spark.kryo.registrator", "geotrellis.spark.io.kryo.GeowaveKryoRegistrator")
     val sparkContext = new SparkContext(sparkConf)
     implicit val sc = sparkContext
 
@@ -101,10 +119,10 @@ object Demo {
 
       require(HadoopAttributeStore(CACHE_DIR).layerExists(inLayerId))
       HadoopLayerReader(CACHE_DIR)
-        .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
-        // .query[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
-        // .where(Intersects(subset))
-        // .result
+        // .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
+        .query[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](inLayerId)
+        .where(Intersects(subset))
+        .result
     }
 
     logger.info("Writing raw layer into GeoWave")
@@ -113,7 +131,6 @@ object Demo {
     logger.info("Writing viewable layer into GeoWave")
     layerWriter.write(LayerId(layerName + "-viewable", 0), viewable(rdd1))
 
-    logger.info("Discovering tier of raw layer ...")
     val tier =
       (1 to 33)
         .toIterator
@@ -131,19 +148,12 @@ object Demo {
     logger.info("Reading raw layer from GeoWave")
     val rdd2 = layerReader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(layerName + "-raw", tier))
 
-    // val mt = rdd2.metadata.mapTransform
-    // viewable(rdd2).collect.foreach({ case (k, v) =>
-    //   val extent = mt(k)
-    //   val pr = ProjectedRaster(Raster(v, extent), LatLng)
-    //   val gc = pr.toGridCoverage2D
-    //   val writer = new GeoTiffWriter(new java.io.File(s"/tmp/tif/geotrellis-${System.currentTimeMillis}.tif"))
-    //   writer.write(gc, Array.empty[GeneralParameterValue])
-    // })
-
     logger.info("Writing viewable hillshade layer into GeoWave")
     layerWriter.write(
-      LayerId(layerName + "-hillshade", tier), // Here, it is assumed that tier and precision coincide
-      viewable(rdd2.hillshade()))
+      LayerId(layerName + "-hillshade", 0),
+      viewable(rdd2.hillshade()),
+      tier // Here, it is assumed that tier and precision coincide
+    )
   }
 
 }
