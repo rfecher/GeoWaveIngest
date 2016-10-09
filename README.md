@@ -54,11 +54,7 @@ spark-submit \
 
 ## Building The Demo Code ##
 
-This demo requires the code found in the GeoTrellis [GeoWave subproject pull request](https://github.com/geotrellis/geotrellis/pull/1542).
-At time of writing, that pull request has not been merged.
-If that is the case at the time of reading, then that branch must be pulled down and published locally, otherwise an appropriate released or pre-release version of GeoTrellis can be used.
-
-It is also required that `sbt` is installed.
+It is required that `sbt` is installed.
 
 Given those dependencies, the code can be built by typing:
 ```bash
