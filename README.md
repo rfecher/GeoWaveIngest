@@ -83,7 +83,7 @@ docker run -it --rm --net=geowave -v $HOME/local/spark-2.0.0-bin-hadoop2.7:/spar
 ```
 then running the demo ingest within that container
 ```bash
-spark-submit \
+/spark/bin/spark-submit \
    --master='local[*]' --conf 'spark.driver.memory=32G' \
    --class com.azavea.geotrellis.geowave.Demo /jars/demo-assembly-0.jar \
    leader instance root password gwRaster 'file:/tmp/catalog-cache' ned 0
