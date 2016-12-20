@@ -4,12 +4,13 @@ val generalDeps = Seq(
   "org.apache.accumulo" % "accumulo-core" % "1.7.1"
     exclude("org.jboss.netty", "netty")
     exclude("org.apache.hadoop", "hadoop-client"),
-  "org.apache.hadoop" % "hadoop-client" % "2.6.2"
+  "org.apache.hadoop" % "hadoop-client" % "2.6.2" exclude("javax.servlet", "servlet-api")
 )
 
 val extraResolvers = Seq(
   "osgeo" at "http://download.osgeo.org/webdav/geotools/",
-  "geowave" at "http://geowave-maven.s3-website-us-east-1.amazonaws.com/snapshot"
+  "geowave-release" at "http://geowave-maven.s3-website-us-east-1.amazonaws.com/release",
+  "geowave-snapshot" at "http://geowave-maven.s3-website-us-east-1.amazonaws.com/snapshot"
 )
 
 lazy val commonSettings = Seq(
